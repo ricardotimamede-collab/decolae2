@@ -737,8 +737,8 @@ h3,
 
 .descricao-pagina {
     margin: 0 0 30px;
-    color: #666;
-    font-size: 13px;
+    color: #000;
+    font-size: 18px;
 }
 
 .aviso {
@@ -1605,8 +1605,8 @@ h3,
 }
 
 .escala-funcao {
-    color: #1976d2;
-    font-size: 11px;
+    color: #000;
+    font-size: 13px;
     font-weight: bold;
     letter-spacing: .5px;
     text-transform: uppercase;
@@ -1614,8 +1614,8 @@ h3,
 
 .escala-numero {
     margin-top: 5px;
-    color: #333;
-    font-size: 20px;
+    color: #000;
+    font-size: 22px;
     font-weight: bold;
 }
 
@@ -1623,8 +1623,8 @@ h3,
     border-radius: 3px;
     background: #d4edda;
     padding: 4px 10px;
-    color: #155724;
-    font-size: 11px;
+    color: #000;
+    font-size: 12px;
     font-weight: bold;
 }
 
@@ -1639,14 +1639,14 @@ h3,
 }
 
 .horario-escala-valor {
-    color: #333;
-    font-size: 18px;
+    color: #000;
+    font-size: 22px;
     font-weight: bold;
 }
 
 .horario-escala-local {
-    color: #666;
-    font-size: 12px;
+    color: #000;
+    font-size: 15px;
 }
 
 .linha-escala {
@@ -1661,8 +1661,8 @@ h3,
 }
 
 .detalhes-aeronave {
-    color: #666;
-    font-size: 12px;
+    color: #000;
+    font-size: 15px;
 }
 
 .estado-vazio-escala {

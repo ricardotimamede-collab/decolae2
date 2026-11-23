@@ -35,6 +35,7 @@ $comando = $conexao_pdo->prepare(
      JOIN trajeto t ON t.id = v.trajeto_id
      JOIN aeronave a ON a.id = v.aeronave_id
      WHERE e.tripulante_cpf = ?
+       AND TIMESTAMP(v.data_voo, t.h_partida) > NOW()
      ORDER BY v.data_voo, t.h_partida"
 );
 
@@ -45,13 +46,13 @@ $comando->execute([$usuario_logado['cpf']]);
 $escalas_tripulante = $comando->fetchAll();
 
 // A partir daqui a gente monta a tela da escala.
-renderizar_cabecalho('Minha escala', $usuario_logado);
+renderizar_cabecalho('Próximas escalas', $usuario_logado);
 ?>
 
 <div class="pagina-tripulante">
-  <h1 class="titulo-pagina titulo-pagina-compacto">Minha Escala</h1>
+  <h1 class="titulo-pagina titulo-pagina-compacto">Próximas Escalas</h1>
   <p class="descricao-pagina">
-    Olá, <?= esc($usuario_logado['nome_completo']) ?>. Aqui estão seus voos escalados.
+    Olá, <?= esc($usuario_logado['nome_completo']) ?>. Aqui estão seus próximos voos.
   </p>
   
   <?php if ($escalas_tripulante): ?>
@@ -108,9 +109,22 @@ renderizar_cabecalho('Minha escala', $usuario_logado);
     </div>
   <?php else: ?>
     <div class="estado-vazio-escala">
-      <p>Nenhuma escala cadastrada para este tripulante.</p>
+      <p>Nenhuma escala futura para este tripulante.</p>
     </div>
   <?php endif; ?>
+
+  <!-- Estes cartões levam para as outras consultas do tripulante. -->
+  <div class="grade-formularios" style="margin-top: 30px;">
+    <a class="cartao-formulario" href="tripulante-historico.php">
+      <h2 class="titulo-formulario">Histórico de Voos</h2>
+      <p class="texto-pequeno" style="color: #000; font-size: 15px;">Consulte todos os voos em que você foi escalado.</p>
+    </a>
+
+    <a class="cartao-formulario" href="tripulante-horas.php">
+      <h2 class="titulo-formulario">Horas Trabalhadas</h2>
+      <p class="texto-pequeno" style="color: #000; font-size: 15px;">Veja quantas horas você trabalhou em cada voo.</p>
+    </a>
+  </div>
 </div>
 
 <?php renderizar_rodape(); ?>
