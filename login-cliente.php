@@ -16,6 +16,10 @@ $mensagem_erro = null;
 $mensagem_sucesso = null;
 $modo_atual = 'login'; // A tela começa no login e também permite criar uma conta.
 
+if (!eh_post() && ($_GET['modo'] ?? '') === 'cadastro') {
+    $modo_atual = 'cadastro';
+}
+
 // Aqui a gente identifica se a pessoa está entrando ou criando uma conta.
 if (eh_post()) {
     $conexao_pdo = db();
@@ -91,44 +95,94 @@ if (eh_post()) {
                 throw new InvalidArgumentException('As senhas não coincidem.');
             }
             
-            // A transação mantém os dados da conta e do cliente sincronizados.
-            $conexao_pdo->beginTransaction();
+            $comando = $conexao_pdo->prepare('SELECT email, senha FROM usuario WHERE cpf = ?');
+            $comando->execute([$cpf]);
+            $conta_existente = $comando->fetch();
             
-            try {
-                // Primeiro a gente grava os dados gerais da conta.
-                $comando = $conexao_pdo->prepare(
-                    'INSERT INTO usuario (cpf, nome_completo, email, endereco, senha) 
-                     VALUES (?, ?, ?, ?, ?)'
-                );
-                $comando->execute([
-                    $cpf,
-                    $nome_completo,
-                    $email,
-                    '',
-                    password_hash($senha, PASSWORD_BCRYPT)
-                ]);
+            if ($telefone !== '') {
+                $comando = $conexao_pdo->prepare('SELECT 1 FROM cliente WHERE telefone = ? AND cpf <> ?');
+                $comando->execute([$telefone, $cpf]);
+                if ($comando->fetchColumn()) {
+                    throw new InvalidArgumentException('Este telefone já está cadastrado.');
+                }
+            }
+            
+            if ($conta_existente) {
+                // Quem já tem conta (por exemplo, como tripulante) só ganha o perfil de cliente.
+                if (verificar_perfil_login_existe($conexao_pdo, $cpf, 'cliente')) {
+                    throw new InvalidArgumentException('Este CPF já está cadastrado.');
+                }
                 
-                // Depois vinculamos a conta ao perfil de cliente.
+                if (
+                    strcasecmp($conta_existente['email'], $email) !== 0
+                    || !password_verify($senha, $conta_existente['senha'])
+                ) {
+                    throw new InvalidArgumentException(
+                        'Este CPF já está cadastrado. Use o email e a senha da sua conta.'
+                    );
+                }
+                
                 $comando_cliente = $conexao_pdo->prepare(
                     'INSERT INTO cliente (cpf, telefone) VALUES (?, ?)'
                 );
                 $comando_cliente->execute([$cpf, $telefone]);
                 
-                $conexao_pdo->commit();
-                
                 log_action(
                     $conexao_pdo,
-                    'CLIENTE_REGISTRADO',
-                    'Novo cliente se registrou na plataforma.',
+                    'PERFIL_CLIENTE_ATIVADO',
+                    'Usuário existente ativou o perfil de cliente.',
                     'usuario:' . $cpf,
                     $cpf
                 );
                 
-                $mensagem_sucesso = 'Cadastro realizado com sucesso! Agora você pode fazer login.';
+                $mensagem_sucesso = 'Perfil de cliente ativado! Agora você também pode entrar como cliente.';
                 $modo_atual = 'login';
-            } catch (Throwable $excecao) {
-                $conexao_pdo->rollBack();
-                throw $excecao;
+            } else {
+                $comando = $conexao_pdo->prepare('SELECT 1 FROM usuario WHERE email = ?');
+                $comando->execute([$email]);
+                if ($comando->fetchColumn()) {
+                    throw new InvalidArgumentException('Este email já está em uso.');
+                }
+                
+                // A transação mantém os dados da conta e do cliente sincronizados.
+                $conexao_pdo->beginTransaction();
+                
+                try {
+                    // Primeiro a gente grava os dados gerais da conta.
+                    $comando = $conexao_pdo->prepare(
+                        'INSERT INTO usuario (cpf, nome_completo, email, endereco, senha) 
+                         VALUES (?, ?, ?, ?, ?)'
+                    );
+                    $comando->execute([
+                        $cpf,
+                        $nome_completo,
+                        $email,
+                        '',
+                        password_hash($senha, PASSWORD_BCRYPT)
+                    ]);
+                    
+                    // Depois vinculamos a conta ao perfil de cliente.
+                    $comando_cliente = $conexao_pdo->prepare(
+                        'INSERT INTO cliente (cpf, telefone) VALUES (?, ?)'
+                    );
+                    $comando_cliente->execute([$cpf, $telefone]);
+                    
+                    $conexao_pdo->commit();
+                    
+                    log_action(
+                        $conexao_pdo,
+                        'CLIENTE_REGISTRADO',
+                        'Novo cliente se registrou na plataforma.',
+                        'usuario:' . $cpf,
+                        $cpf
+                    );
+                    
+                    $mensagem_sucesso = 'Cadastro realizado com sucesso! Agora você pode fazer login.';
+                    $modo_atual = 'login';
+                } catch (Throwable $excecao) {
+                    $conexao_pdo->rollBack();
+                    throw $excecao;
+                }
             }
         }
     } catch (Throwable $excecao) {
@@ -201,13 +255,9 @@ renderizar_cabecalho('Login - Cliente', null);
                 
                 <div class="alternar-modo-login">
                     <p class="alternar-modo-login-texto">Não tem conta ainda?</p>
-                    <form method="post" class="formulario-em-linha">
-                        <input type="hidden" name="token_csrf" value="<?= esc(obter_token_csrf()) ?>">
-                        <input type="hidden" name="modo" value="cadastro">
-                        <button class="link-botao-login" type="submit">
-                            Criar nova conta
-                        </button>
-                    </form>
+                    <a class="link-botao-login" href="login-cliente.php?modo=cadastro">
+                        Criar nova conta
+                    </a>
                 </div>
             
             <?php else: ?>
@@ -296,13 +346,9 @@ renderizar_cabecalho('Login - Cliente', null);
                 
                 <div class="alternar-modo-login">
                     <p class="alternar-modo-login-texto">Já tem conta?</p>
-                    <form method="post" class="formulario-em-linha">
-                        <input type="hidden" name="token_csrf" value="<?= esc(obter_token_csrf()) ?>">
-                        <input type="hidden" name="modo" value="login">
-                        <button class="link-botao-login" type="submit">
-                            Fazer login
-                        </button>
-                    </form>
+                    <a class="link-botao-login" href="login-cliente.php">
+                        Fazer login
+                    </a>
                 </div>
             
             <?php endif; ?>

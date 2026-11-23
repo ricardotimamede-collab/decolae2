@@ -72,7 +72,7 @@ function renderizar_cabecalho(string $titulo, ?array $usuario = null): void
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     
     <!-- Os estilos próprios do projeto ficam neste arquivo. -->
-    <link rel="stylesheet" href="assets/css/app.css">
+    <link rel="stylesheet" href="assets/css/app.css?v=<?= filemtime(__DIR__ . '/../assets/css/app.css') ?>">
 </head>
 <body class="bg-[#f7faff] text-ink antialiased">
 
