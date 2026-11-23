@@ -22,16 +22,12 @@
         const botaoConfirmar = document.querySelector('#confirm-booking');
         const formularioBusca = document.querySelector('#search-form');
         
-        // Este token acompanha as requisições que precisam de proteção.
-        const tokenCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        
         console.log('Modal encontrado:', !!modalAssentos);
         console.log('Formulário encontrado:', !!formularioBusca);
         
         // Aqui a gente guarda o voo e o assento escolhidos.
         let assentoSelecionado = null;
         let vooAtivo = null;
-        let reservaEmAndamento = false;
 
         /**
          * Aqui a gente escapa o texto antes de colocá-lo no HTML.
@@ -404,58 +400,12 @@
             });
         }
 
-        // Aqui a gente confirma a reserva do assento escolhido.
+        // O botão leva para o resumo da compra, onde a pessoa revisa e confirma.
         if (botaoConfirmar) {
-            botaoConfirmar.addEventListener('click', async () => {
-                // Assim a pessoa não envia a mesma reserva várias vezes.
-                if (botaoConfirmar.disabled || reservaEmAndamento) return;
-                
-                console.log('Confirmando reserva');
-                
-                if (!assentoSelecionado || !vooAtivo) {
-                    console.error('Assento ou voo não selecionado');
-                    return;
-                }
-                
-                reservaEmAndamento = true;
-                botaoConfirmar.disabled = true;
-                const textoOriginal = botaoConfirmar.innerHTML;
-                botaoConfirmar.innerHTML = 'Confirmando…';
-                
-                try {
-                    const corpo = new URLSearchParams({
-                        token_csrf: tokenCsrf,
-                        id_voo: vooAtivo.id,
-                        id_assento: assentoSelecionado.id
-                    });
-                    
-                    const resposta = await fetch('api/reservar.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: corpo
-                    });
-                    
-                    const dados = await resposta.json();
-                    console.log('Resposta da reserva:', dados);
-                    
-                    if (!dados.ok) {
-                        throw new Error(dados.message);
-                    }
-                    
-                    fecharModal();
-                    mostrarToast(`Reserva confirmada · bilhete ${dados.ticket}.`);
+            botaoConfirmar.addEventListener('click', () => {
+                if (botaoConfirmar.disabled || !assentoSelecionado || !vooAtivo) return;
 
-                    if (typeof carregarBilhetes === 'function') {
-                        await carregarBilhetes();
-                    }
-                } catch (erro) {
-                    console.error('Erro ao confirmar reserva:', erro);
-                    mostrarToast(erro.message || 'Erro ao confirmar reserva.', 'erro');
-                    botaoConfirmar.disabled = false;
-                } finally {
-                    reservaEmAndamento = false;
-                    botaoConfirmar.innerHTML = textoOriginal;
-                }
+                window.location.href = `compra.php?voo=${encodeURIComponent(vooAtivo.id)}&assento=${encodeURIComponent(assentoSelecionado.id)}`;
             });
         }
 

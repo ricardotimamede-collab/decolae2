@@ -407,3 +407,106 @@ function is_post(): bool
 {
     return eh_post();
 }
+
+/**
+ * Aqui a gente registra a compra de um assento para o cliente.
+ *
+ * @param PDO $conexao Conexão com banco de dados
+ * @param string $cpf_cliente CPF de quem está comprando
+ * @param int $id_voo Voo escolhido
+ * @param int $id_assento Assento escolhido
+ * @return array Número do bilhete e código do assento
+ * @throws RuntimeException Se o voo ou o assento não estiverem disponíveis
+ */
+function reservar_passagem(PDO $conexao, string $cpf_cliente, int $id_voo, int $id_assento): array
+{
+    $conexao->beginTransaction();
+
+    try {
+        // O bloqueio evita que outra compra altere este voo durante a operação.
+        $cmd = $conexao->prepare(
+            "SELECT v.id, v.valor_base, a.id AS aeronave_id
+             FROM voo v
+             JOIN aeronave a ON a.id = v.aeronave_id
+             WHERE v.id = ? AND v.status <> 'cancelado'
+             FOR UPDATE"
+        );
+        $cmd->execute([$id_voo]);
+        $voo = $cmd->fetch();
+
+        if (!$voo) throw new Exception('Voo não disponível.');
+
+        // Também bloqueamos o assento enquanto conferimos se ele pertence ao voo.
+        $cmd = $conexao->prepare(
+            'SELECT id, codigo_assento
+             FROM assento
+             WHERE id = ? AND aeronave_id = ?
+             FOR UPDATE'
+        );
+        $cmd->execute([$id_assento, $voo['aeronave_id']]);
+        $assento = $cmd->fetch();
+
+        if (!$assento) throw new Exception('Assento inválido.');
+
+        // Antes de comprar, a gente confirma que ninguém ocupou o assento.
+        $cmd = $conexao->prepare(
+            "SELECT id FROM passagem
+             WHERE voo_id = ? AND assento_id = ? AND status IN ('confirmada', 'checkin')
+             FOR UPDATE"
+        );
+        $cmd->execute([$id_voo, $id_assento]);
+
+        if ($cmd->fetch()) throw new Exception('Assento já reservado.');
+
+        // Se o assento continua livre, a gente cria a passagem.
+        $numero_bilhete = strtoupper(substr(bin2hex(random_bytes(8)), 0, 10));
+        $cmd = $conexao->prepare(
+            "INSERT INTO passagem (numero_bilhete, cliente_cpf, voo_id, assento_id, valor, status, versao)
+             VALUES (?, ?, ?, ?, ?, 'confirmada', 1)"
+        );
+        $cmd->execute([$numero_bilhete, $cpf_cliente, $id_voo, $id_assento, $voo['valor_base']]);
+
+        registrar_acao($conexao, 'RESERVA_CRIADA', "Passagem {$numero_bilhete} confirmada.", $numero_bilhete, $cpf_cliente);
+
+        $conexao->commit();
+
+        return ['ticket' => $numero_bilhete, 'codigo_assento' => $assento['codigo_assento']];
+    } catch (Throwable $e) {
+        if ($conexao->inTransaction()) $conexao->rollBack();
+
+        $mensagem = $e->getMessage();
+        if (
+            $e instanceof PDOException
+            && (int) ($e->errorInfo[1] ?? 0) === 1062
+            && strpos((string) ($e->errorInfo[2] ?? ''), 'uq_passagem_assento_voo') !== false
+        ) {
+            $mensagem = 'Este assento já foi reservado. Escolha outro assento.';
+        }
+
+        throw new RuntimeException($mensagem, 0, $e);
+    }
+}
+
+/**
+ * Aqui a gente guarda um aviso na sessão para aparecer na próxima página.
+ *
+ * @param string $texto Mensagem para a pessoa
+ * @param string $tipo "sucesso" ou "erro"
+ */
+function definir_aviso(string $texto, string $tipo = 'sucesso'): void
+{
+    $_SESSION['aviso'] = ['texto' => $texto, 'tipo' => $tipo];
+}
+
+/**
+ * Aqui a gente lê o aviso guardado e o remove, para aparecer só uma vez.
+ *
+ * @return array|null Aviso com texto e tipo, ou null se não houver
+ */
+function obter_aviso(): ?array
+{
+    $aviso = $_SESSION['aviso'] ?? null;
+    unset($_SESSION['aviso']);
+
+    return $aviso;
+}

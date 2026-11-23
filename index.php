@@ -20,6 +20,7 @@ $usuario = null;
 $voos = [];
 $codigos_aeroportos = [];
 $erro_banco = null;
+$aviso = obter_aviso();
 
 try {
     // A gente usa esta conexão para consultar os voos.
@@ -73,6 +74,9 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
 ?>
 
 <div id="voos" class="secao-voos">
+  <?php if ($aviso && $aviso['tipo'] === 'erro'): ?>
+    <div class="aviso aviso-erro">✗ <?= esc($aviso['texto']) ?></div>
+  <?php endif; ?>
   
   <div class="cartao-busca-voos">
     <h2 class="titulo-secao-busca">Buscar Voos</h2>
@@ -130,6 +134,9 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
 <!-- Aqui começa a área com os bilhetes da pessoa conectada. -->
 <div id="meus-bilhetes" class="secao-bilhetes">
   <h2 class="titulo-secao-bilhetes">Meus Bilhetes</h2>
+  <?php if ($aviso && $aviso['tipo'] === 'sucesso'): ?>
+    <div class="aviso aviso-sucesso">✓ <?= esc($aviso['texto']) ?></div>
+  <?php endif; ?>
   
   <div id="bilhetes-container" class="lista-bilhetes">
     <div class="estado-bilhetes">
@@ -229,7 +236,7 @@ function card_voo_html(array $voo): string
         Cancelar
       </button>
       <button id="confirm-booking" class="botao-confirmar-modal" disabled>
-        Confirmar
+        Continuar
       </button>
     </div>
   </div>
