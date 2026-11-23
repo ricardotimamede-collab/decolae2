@@ -277,6 +277,13 @@
 
         // Quando a pessoa busca, a gente atualiza a lista de voos.
         if (formularioBusca) {
+            const campoData = formularioBusca.querySelector('input[type="date"]');
+            if (campoData) {
+                campoData.addEventListener('click', () => {
+                    try { campoData.showPicker(); } catch (erro) {}
+                });
+            }
+
             console.log('Anexando listener ao formulário de busca');
             formularioBusca.addEventListener('submit', async (e) => {
                 e.preventDefault();

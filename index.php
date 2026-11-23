@@ -19,9 +19,6 @@ $conexao_pdo = null;
 $usuario = null;
 $voos = [];
 $codigos_aeroportos = [];
-$datas_disponiveis = [];
-$datas_disponiveis_formatadas = [];
-$data_padrao_voo = date('Y-m-d', strtotime('+1 day'));
 $erro_banco = null;
 
 try {
@@ -48,21 +45,6 @@ try {
          ORDER BY codigo"
     )->fetchAll(PDO::FETCH_COLUMN);
 
-    $datas_disponiveis = $conexao_pdo->query(
-        "SELECT DISTINCT data_voo
-         FROM voo
-         WHERE status <> 'cancelado' AND data_voo >= CURDATE()
-         ORDER BY data_voo"
-    )->fetchAll(PDO::FETCH_COLUMN);
-
-    if ($datas_disponiveis) {
-        $data_padrao_voo = $datas_disponiveis[0];
-
-        foreach ($datas_disponiveis as $data_disponivel) {
-            $datas_disponiveis_formatadas[] = date('d/m/Y', strtotime($data_disponivel));
-        }
-    }
-    
     // A gente mostra até 12 voos que atendem aos filtros.
     $comando = $conexao_pdo->query(
         "SELECT v.id, v.numero_voo, v.data_voo, v.status, v.valor_base, v.aeronave_id,
@@ -108,10 +90,7 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
       
       <div>
         <label class="rotulo-busca-voos">Data do voo</label>
-        <input class="entrada-busca-voos" type="date" name="date" value="<?= esc($data_padrao_voo) ?>" list="datas-voos">
-        <?php if ($datas_disponiveis_formatadas): ?>
-          <small class="ajuda-busca-voos">Dias com voos: <?= esc(implode(', ', $datas_disponiveis_formatadas)) ?></small>
-        <?php endif; ?>
+        <input class="entrada-busca-voos" type="date" name="date">
       </div>
 
       <datalist id="codigos-aeroportos">
@@ -120,12 +99,6 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
         <?php endforeach; ?>
       </datalist>
 
-      <datalist id="datas-voos">
-        <?php foreach ($datas_disponiveis as $data_disponivel): ?>
-          <option value="<?= esc($data_disponivel) ?>"></option>
-        <?php endforeach; ?>
-      </datalist>
-      
       <div class="container-botao-busca">
         <button class="botao-busca-voos" type="submit">Buscar</button>
       </div>
@@ -148,7 +121,7 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
     
     <div id="empty-state" class="estado-vazio-voos" hidden>
       <p class="estado-vazio-voos-titulo">Nenhum voo encontrado</p>
-      <p>Confira o código IATA e escolha uma das datas com voos cadastrados.</p>
+      <p>Confira o código IATA e a data escolhida.</p>
     </div>
   
   <?php endif; ?>
