@@ -9,8 +9,8 @@ require_once __DIR__ . '/../includes/functions.php';
 try {
     $conexao_pdo = db();
     
-    $origem = strtoupper(trim((string) ($_GET['origin'] ?? '')));
-    $destino = strtoupper(trim((string) ($_GET['destination'] ?? '')));
+    $origem = trim((string) ($_GET['origin'] ?? ''));
+    $destino = trim((string) ($_GET['destination'] ?? ''));
     $data_voo = normalizar_data(isset($_GET['date']) ? (string) $_GET['date'] : null);
     
     $sql = "SELECT * FROM vw_voos_disponibilidade WHERE status <> 'cancelado'";

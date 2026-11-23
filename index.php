@@ -79,13 +79,13 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
     
     <form id="search-form" class="formulario-busca-voos">
       <div>
-        <label class="rotulo-busca-voos">Origem (código IATA)</label>
-        <input class="entrada-busca-voos" name="origin" list="codigos-aeroportos" placeholder="Escolha um aeroporto" maxlength="3" autocomplete="off">
+        <label class="rotulo-busca-voos">Origem</label>
+        <input class="entrada-busca-voos" name="origin" list="codigos-aeroportos" placeholder="Escolha uma origem" maxlength="60" autocomplete="off">
       </div>
       
       <div>
-        <label class="rotulo-busca-voos">Destino (código IATA)</label>
-        <input class="entrada-busca-voos" name="destination" list="codigos-aeroportos" placeholder="Escolha um aeroporto" maxlength="3" autocomplete="off">
+        <label class="rotulo-busca-voos">Destino</label>
+        <input class="entrada-busca-voos" name="destination" list="codigos-aeroportos" placeholder="Escolha um destino" maxlength="60" autocomplete="off">
       </div>
       
       <div>

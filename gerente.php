@@ -53,15 +53,11 @@ if (is_post()) {
          * Aqui a gente confere os códigos dos aeroportos e salva o trajeto.
          */
         if ($acao === 'trajeto') {
-            // Os códigos IATA são salvos em letras maiúsculas.
-            $origem = strtoupper(obter_campo_obrigatorio('origem'));
-            $destino = strtoupper(obter_campo_obrigatorio('destino'));
-            
-            // A origem e o destino precisam ser códigos válidos e diferentes.
-            if (!preg_match('/^[A-Z]{3}$/', $origem) || 
-                !preg_match('/^[A-Z]{3}$/', $destino) || 
-                $origem === $destino) {
-                throw new InvalidArgumentException('Use códigos IATA diferentes.');
+            $origem = obter_campo_obrigatorio('origem');
+            $destino = obter_campo_obrigatorio('destino');
+
+            if (mb_strtolower($origem) === mb_strtolower($destino)) {
+                throw new InvalidArgumentException('Origem e destino devem ser diferentes.');
             }
             
             // Se os dados estiverem certos, a gente grava o trajeto.
@@ -280,13 +276,13 @@ renderizar_cabecalho('Gerência', $usuarioLogado);
         <input type="hidden" name="acao" value="trajeto">
         
         <div class="campo-form">
-          <label>Origem IATA</label>
-          <input name="origem" maxlength="3" placeholder="Ex: GIG" required>
+          <label>Origem</label>
+          <input name="origem" maxlength="60" placeholder="Ex: Belo Horizonte (CNF)" required>
         </div>
         
         <div class="campo-form">
-          <label>Destino IATA</label>
-          <input name="destino" maxlength="3" placeholder="Ex: SAO" required>
+          <label>Destino</label>
+          <input name="destino" maxlength="60" placeholder="Ex: São Paulo (GRU)" required>
         </div>
         
         <div class="campo-form">

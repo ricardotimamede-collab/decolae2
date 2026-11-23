@@ -9,6 +9,7 @@ SET time_zone = "+00:00";
 -- Banco de dados: `decolae`
 
 --
+DELIMITER $$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_reservar_passagem` (IN `p_cliente_cpf` CHAR(11), IN `p_voo_id` INT UNSIGNED, IN `p_assento_id` INT UNSIGNED, IN `p_valor` DECIMAL(10,2))   BEGIN
     DECLARE v_aeronave_voo INT UNSIGNED;
     DECLARE v_aeronave_assento INT UNSIGNED;
@@ -774,8 +775,8 @@ DELIMITER ;
 
 CREATE TABLE `trajeto` (
   `id` int(10) UNSIGNED NOT NULL,
-  `origem` char(3) NOT NULL,
-  `destino` char(3) NOT NULL,
+  `origem` varchar(60) NOT NULL,
+  `destino` varchar(60) NOT NULL,
   `h_partida` time NOT NULL,
   `h_chegada` time NOT NULL,
   `gerente_cpf` char(11) NOT NULL
@@ -786,26 +787,26 @@ CREATE TABLE `trajeto` (
 --
 
 INSERT INTO `trajeto` (`id`, `origem`, `destino`, `h_partida`, `h_chegada`, `gerente_cpf`) VALUES
-(1, 'SAO', 'RIO', '08:00:00', '10:00:00', '12345678902'),
-(2, 'RIO', 'BRA', '09:00:00', '11:30:00', '12345678902'),
-(3, 'SAO', 'BRA', '10:30:00', '12:45:00', '12345678902'),
-(4, 'RIO', 'SAO', '14:00:00', '15:45:00', '12345678902'),
-(5, 'BRA', 'RIO', '16:00:00', '18:15:00', '12345678902'),
-(6, 'SAO', 'SLZ', '06:00:00', '08:30:00', '12345678902'),
-(7, 'SLZ', 'SAO', '19:00:00', '21:30:00', '12345678902'),
-(8, 'REC', 'SAO', '07:00:00', '09:30:00', '12345678902'),
-(9, 'SAO', 'REC', '11:00:00', '13:30:00', '12345678902'),
-(10, 'BRA', 'BH', '09:00:00', '10:30:00', '12345678902'),
-(11, 'BH', 'SAO', '15:30:00', '17:00:00', '12345678902'),
-(12, 'SAO', 'BRA', '10:30:00', '12:45:00', '12345678902'),
-(13, 'RIO', 'SAO', '14:00:00', '15:45:00', '12345678902'),
-(14, 'BRA', 'RIO', '16:00:00', '18:15:00', '12345678902'),
-(15, 'SAO', 'SLZ', '06:00:00', '08:30:00', '12345678902'),
-(16, 'SLZ', 'SAO', '19:00:00', '21:30:00', '12345678902'),
-(17, 'REC', 'SAO', '07:00:00', '09:30:00', '12345678902'),
-(18, 'SAO', 'REC', '11:00:00', '13:30:00', '12345678902'),
-(19, 'BRA', 'BH', '09:00:00', '10:30:00', '12345678902'),
-(20, 'BH', 'SAO', '15:30:00', '17:00:00', '12345678902');
+(1, 'São Paulo (GRU)', 'Rio de Janeiro (GIG)', '08:00:00', '10:00:00', '12345678902'),
+(2, 'Rio de Janeiro (GIG)', 'Brasília (BSB)', '09:00:00', '11:30:00', '12345678902'),
+(3, 'São Paulo (GRU)', 'Brasília (BSB)', '10:30:00', '12:45:00', '12345678902'),
+(4, 'Rio de Janeiro (GIG)', 'São Paulo (GRU)', '14:00:00', '15:45:00', '12345678902'),
+(5, 'Brasília (BSB)', 'Rio de Janeiro (GIG)', '16:00:00', '18:15:00', '12345678902'),
+(6, 'São Paulo (GRU)', 'São Luís (SLZ)', '06:00:00', '08:30:00', '12345678902'),
+(7, 'São Luís (SLZ)', 'São Paulo (GRU)', '19:00:00', '21:30:00', '12345678902'),
+(8, 'Recife (REC)', 'São Paulo (GRU)', '07:00:00', '09:30:00', '12345678902'),
+(9, 'São Paulo (GRU)', 'Recife (REC)', '11:00:00', '13:30:00', '12345678902'),
+(10, 'Brasília (BSB)', 'Belo Horizonte (CNF)', '09:00:00', '10:30:00', '12345678902'),
+(11, 'Belo Horizonte (CNF)', 'São Paulo (GRU)', '15:30:00', '17:00:00', '12345678902'),
+(12, 'São Paulo (GRU)', 'Brasília (BSB)', '10:30:00', '12:45:00', '12345678902'),
+(13, 'Rio de Janeiro (GIG)', 'São Paulo (GRU)', '14:00:00', '15:45:00', '12345678902'),
+(14, 'Brasília (BSB)', 'Rio de Janeiro (GIG)', '16:00:00', '18:15:00', '12345678902'),
+(15, 'São Paulo (GRU)', 'São Luís (SLZ)', '06:00:00', '08:30:00', '12345678902'),
+(16, 'São Luís (SLZ)', 'São Paulo (GRU)', '19:00:00', '21:30:00', '12345678902'),
+(17, 'Recife (REC)', 'São Paulo (GRU)', '07:00:00', '09:30:00', '12345678902'),
+(18, 'São Paulo (GRU)', 'Recife (REC)', '11:00:00', '13:30:00', '12345678902'),
+(19, 'Brasília (BSB)', 'Belo Horizonte (CNF)', '09:00:00', '10:30:00', '12345678902'),
+(20, 'Belo Horizonte (CNF)', 'São Paulo (GRU)', '15:30:00', '17:00:00', '12345678902');
 
 -- --------------------------------------------------------
 
@@ -950,8 +951,8 @@ CREATE TABLE `vw_voos_disponibilidade` (
 ,`data_voo` date
 ,`status` enum('programado','embarque','concluido','cancelado')
 ,`valor_base` decimal(10,2)
-,`origem` char(3)
-,`destino` char(3)
+,`origem` varchar(60)
+,`destino` varchar(60)
 ,`h_partida` time
 ,`h_chegada` time
 ,`partida_em` varchar(21)
