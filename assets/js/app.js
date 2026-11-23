@@ -65,15 +65,18 @@
         function mostrarToast(mensagem, tipo = 'sucesso') {
             const toast = document.querySelector('#toast');
             if (!toast) return;
-            
+
             toast.textContent = mensagem;
             toast.classList.toggle('aviso-flutuante-erro', tipo === 'erro');
             toast.hidden = false;
-            
+
             setTimeout(() => {
                 toast.hidden = true;
             }, 4000);
         }
+
+        // Fica disponível para os scripts das páginas, como o de cancelar bilhete.
+        window.mostrarToast = mostrarToast;
 
         /**
          * Aqui a gente liga os botões de voo à abertura do mapa de assentos.

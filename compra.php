@@ -67,7 +67,7 @@ if (eh_post()) {
         $resultado = reservar_passagem($conexao_pdo, $usuario['cpf'], $id_voo, $id_assento);
 
         definir_aviso("Compra confirmada · bilhete {$resultado['ticket']} · assento {$resultado['codigo_assento']}.");
-        header('Location: index.php#meus-bilhetes');
+        header('Location: meus-bilhetes.php');
         exit;
     } catch (Throwable $excecao) {
         definir_aviso($excecao->getMessage(), 'erro');

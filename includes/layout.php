@@ -94,8 +94,9 @@ function renderizar_cabecalho(string $titulo, ?array $usuario = null): void
         <nav class="hidden items-center gap-6 text-sm font-semibold text-slate-500 md:flex">
             <!-- Quem está na área de cliente pode buscar voos e ver bilhetes. -->
             <?php if (!$usuario || $papel_ativo === 'cliente'): ?>
-                <a class="nav-link active" href="index.php#voos">Encontrar voos</a>
-                <a class="nav-link" href="index.php#meus-bilhetes">Meus Bilhetes</a>
+                <?php $pagina_atual = basename($_SERVER['SCRIPT_NAME']); ?>
+                <a class="nav-link <?= $pagina_atual !== 'meus-bilhetes.php' ? 'active' : '' ?>" href="index.php#voos">Encontrar voos</a>
+                <a class="nav-link <?= $pagina_atual === 'meus-bilhetes.php' ? 'active' : '' ?>" href="meus-bilhetes.php">Meus Bilhetes</a>
             <?php endif; ?>
             
             <!-- O gerente acessa as ferramentas de cadastro por aqui. -->
