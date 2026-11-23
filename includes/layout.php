@@ -172,7 +172,10 @@ function renderizar_rodape(): void
 <footer class="mt-16 border-t border-slate-200 bg-white">
     <div class="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-8 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8">
         <p>
-            <strong class="text-ink">DECOLAE</strong> · trabalho prático de banco de dados
+            <span class="brand-name">DECOLAE</span>
+            <span class="block text-[10px] font-semibold uppercase tracking-[.22em] text-slate-400">
+                conectando destinos
+            </span>
         </p>
     </div>
 </footer>
