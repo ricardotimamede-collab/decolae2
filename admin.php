@@ -203,8 +203,8 @@ if (eh_post()) {
                 $conflito_aeronave = verificar_conflito_aeronave(
                     $conexao_pdo,
                     $id_aeronave,
-                    $timestamp_chegada,
-                    $timestamp_partida
+                    $timestamp_partida,
+                    $timestamp_chegada
                 );
                 
                 if ($conflito_aeronave) {
