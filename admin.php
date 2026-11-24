@@ -95,8 +95,57 @@ function verificar_conflito_aeronave(
          LIMIT 1"
     );
     $comando->execute([$id_aeronave, $chegada, $partida]);
-    
+
     return $comando->fetch() ?: null;
+}
+
+function verificar_localizacao_aeronave(
+    PDO $conexao,
+    int $id_aeronave,
+    string $origem,
+    string $destino,
+    string $partida,
+    string $chegada
+): ?string {
+    $mesmo_local = static fn(string $a, string $b): bool => mb_strtolower(trim($a)) === mb_strtolower(trim($b));
+
+    $comando = $conexao->prepare(
+        "SELECT v.numero_voo, t.destino
+         FROM voo v
+         JOIN trajeto t ON t.id = v.trajeto_id
+         WHERE v.aeronave_id = ?
+         AND v.status <> 'cancelado'
+         AND TIMESTAMP(v.data_voo, t.h_chegada) <= ?
+         ORDER BY TIMESTAMP(v.data_voo, t.h_chegada) DESC
+         LIMIT 1"
+    );
+    $comando->execute([$id_aeronave, $partida]);
+    $anterior = $comando->fetch();
+
+    if ($anterior && !$mesmo_local($anterior['destino'], $origem)) {
+        return "Esta aeronave estará em {$anterior['destino']} após o voo {$anterior['numero_voo']}, "
+            . "e este voo sai de {$origem}.";
+    }
+
+    $comando = $conexao->prepare(
+        "SELECT v.numero_voo, t.origem
+         FROM voo v
+         JOIN trajeto t ON t.id = v.trajeto_id
+         WHERE v.aeronave_id = ?
+         AND v.status <> 'cancelado'
+         AND TIMESTAMP(v.data_voo, t.h_partida) >= ?
+         ORDER BY TIMESTAMP(v.data_voo, t.h_partida) ASC
+         LIMIT 1"
+    );
+    $comando->execute([$id_aeronave, $chegada]);
+    $seguinte = $comando->fetch();
+
+    if ($seguinte && !$mesmo_local($seguinte['origem'], $destino)) {
+        return "Este voo termina em {$destino}, mas o voo seguinte desta aeronave "
+            . "({$seguinte['numero_voo']}) sai de {$seguinte['origem']}.";
+    }
+
+    return null;
 }
 
 /**
@@ -174,7 +223,7 @@ if (eh_post()) {
             
             // Os horários de partida e chegada vêm do trajeto escolhido.
             $comando_trajeto = $conexao_pdo->prepare(
-                'SELECT h_partida, h_chegada FROM trajeto WHERE id = ?'
+                'SELECT origem, destino, h_partida, h_chegada FROM trajeto WHERE id = ?'
             );
             $comando_trajeto->execute([$id_trajeto]);
             $dados_trajeto = $comando_trajeto->fetch();
@@ -211,6 +260,20 @@ if (eh_post()) {
                     throw new InvalidArgumentException(
                         "A aeronave já está alocada ao voo {$conflito_aeronave['numero_voo']} nesse intervalo."
                     );
+                }
+
+                // A aeronave precisa estar na cidade de onde o voo vai sair.
+                $erro_localizacao = verificar_localizacao_aeronave(
+                    $conexao_pdo,
+                    $id_aeronave,
+                    $dados_trajeto['origem'],
+                    $dados_trajeto['destino'],
+                    $timestamp_partida,
+                    $timestamp_chegada
+                );
+
+                if ($erro_localizacao) {
+                    throw new InvalidArgumentException($erro_localizacao);
                 }
                 
                 // Aqui a gente prepara o novo registro do voo.
