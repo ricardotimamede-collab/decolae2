@@ -100,16 +100,17 @@ function verificar_conflito_aeronave(
 }
 
 /**
- * Aqui a gente confere os horários e o descanso do tripulante.
+ * Aqui a gente confere se o tripulante pode assumir o voo.
  * 
- * Além de evitar sobreposição, a escala precisa respeitar 36 horas de descanso.
+ * Busca os voos já escalados e aplica a regra de 12 horas de trabalho
+ * com descanso de 36 horas, além de impedir horários sobrepostos.
  * 
  * @param PDO $conexao Conexão com banco
  * @param string $cpf_tripulante CPF do tripulante
  * @param int $id_voo ID do voo (atual, para exclusão)
  * @param string $partida Timestamp de partida
  * @param string $chegada Timestamp de chegada
- * @return array|null Voo em conflito ou null
+ * @return string|null Motivo da recusa ou null se a escala é permitida
  */
 function verificar_conflito_tripulante(
     PDO $conexao,
@@ -117,34 +118,21 @@ function verificar_conflito_tripulante(
     int $id_voo,
     string $partida,
     string $chegada
-): ?array {
-    // A consulta procura sobreposição e falta de descanso antes ou depois do voo.
-    $sql = "
-        SELECT v2.numero_voo
-        FROM escala e
-        JOIN voo v2 ON v2.id = e.voo_id
-        JOIN trajeto t2 ON t2.id = v2.trajeto_id
-        WHERE e.tripulante_cpf = ?
-        AND e.voo_id <> ?
-        AND v2.status <> 'cancelado'
-        AND (
-            -- Caso 1: Sobreposição de horários
-            (TIMESTAMP(v2.data_voo, t2.h_partida) < ? 
-             AND TIMESTAMP(v2.data_voo, t2.h_chegada) > ?)
-            -- Caso 2: Descanso mínimo após outro voo
-            OR (TIMESTAMP(v2.data_voo, t2.h_chegada) <= ? 
-                AND TIMESTAMPDIFF(HOUR, TIMESTAMP(v2.data_voo, t2.h_chegada), ?) < 36)
-            -- Caso 3: Descanso mínimo antes de outro voo
-            OR (TIMESTAMP(v2.data_voo, t2.h_partida) >= ? 
-                AND TIMESTAMPDIFF(HOUR, ?, TIMESTAMP(v2.data_voo, t2.h_partida)) < 36)
-        )
-        LIMIT 1
-    ";
+): ?string {
+    $comando = $conexao->prepare(
+        "SELECT v2.numero_voo,
+                TIMESTAMP(v2.data_voo, t2.h_partida) AS partida_em,
+                TIMESTAMP(v2.data_voo, t2.h_chegada) AS chegada_em
+         FROM escala e
+         JOIN voo v2 ON v2.id = e.voo_id
+         JOIN trajeto t2 ON t2.id = v2.trajeto_id
+         WHERE e.tripulante_cpf = ?
+         AND e.voo_id <> ?
+         AND v2.status <> 'cancelado'"
+    );
+    $comando->execute([$cpf_tripulante, $id_voo]);
     
-    $comando = $conexao->prepare($sql);
-    $comando->execute([$cpf_tripulante, $id_voo, $chegada, $partida, $partida, $partida, $chegada, $chegada]);
-    
-    return $comando->fetch() ?: null;
+    return avaliar_escala_tripulante($comando->fetchAll(), $partida, $chegada);
 }
 
 // Aqui a gente valida e processa o que foi enviado pelos formulários.
@@ -299,7 +287,7 @@ if (eh_post()) {
             }
             
             // Antes de escalar, a gente confere a jornada e o descanso.
-            $conflito_jornada = verificar_conflito_tripulante(
+            $motivo_recusa = verificar_conflito_tripulante(
                 $conexao_pdo,
                 $cpf_tripulante,
                 $id_voo,
@@ -307,10 +295,8 @@ if (eh_post()) {
                 $dados_voo['chegada_em']
             );
             
-            if ($conflito_jornada) {
-                throw new InvalidArgumentException(
-                    "Conflito de escala com {$conflito_jornada['numero_voo']} ou descanso inferior a 36 horas."
-                );
+            if ($motivo_recusa) {
+                throw new InvalidArgumentException($motivo_recusa);
             }
             
             // Aqui a gente prepara a inclusão na equipe.

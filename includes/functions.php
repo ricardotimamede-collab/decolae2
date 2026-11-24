@@ -487,6 +487,75 @@ function reservar_passagem(PDO $conexao, string $cpf_cliente, int $id_voo, int $
     }
 }
 
+/** Máximo de horas de voo seguidas, antes de exigir um descanso. */
+const LIMITE_HORAS_TRABALHO = 12;
+
+/** Descanso mínimo, em horas, que encerra um período de trabalho. */
+const DESCANSO_MINIMO_HORAS = 36;
+
+/**
+ * Aqui a gente confere se um tripulante pode assumir um novo voo.
+ *
+ * Voos separados por menos de 36 horas formam um mesmo período de trabalho,
+ * e esse período não pode passar de 12 horas de voo. Também não pode haver
+ * sobreposição de horários.
+ *
+ * @param array $escalas_existentes Voos já escalados, com numero_voo, partida_em e chegada_em
+ * @param string $partida Partida do novo voo
+ * @param string $chegada Chegada do novo voo
+ * @return string|null Motivo da recusa, ou null se a escala é permitida
+ */
+function avaliar_escala_tripulante(array $escalas_existentes, string $partida, string $chegada): ?string
+{
+    $inicio_novo = strtotime($partida);
+    $fim_novo = strtotime($chegada);
+
+    foreach ($escalas_existentes as $voo) {
+        if (strtotime($voo['partida_em']) < $fim_novo && strtotime($voo['chegada_em']) > $inicio_novo) {
+            return "O tripulante já está escalado no voo {$voo['numero_voo']} nesse horário.";
+        }
+    }
+
+    $voos = [];
+    foreach ($escalas_existentes as $voo) {
+        $voos[] = ['inicio' => strtotime($voo['partida_em']), 'fim' => strtotime($voo['chegada_em']), 'novo' => false];
+    }
+    $voos[] = ['inicio' => $inicio_novo, 'fim' => $fim_novo, 'novo' => true];
+    usort($voos, static fn(array $a, array $b): int => $a['inicio'] <=> $b['inicio']);
+
+    // Cada período reúne os voos que não tiveram o descanso mínimo entre eles.
+    $periodos = [];
+    $periodo = [];
+    $fim_anterior = null;
+
+    foreach ($voos as $voo) {
+        if ($fim_anterior !== null && $voo['inicio'] - $fim_anterior >= DESCANSO_MINIMO_HORAS * 3600) {
+            $periodos[] = $periodo;
+            $periodo = [];
+        }
+
+        $periodo[] = $voo;
+        $fim_anterior = $voo['fim'];
+    }
+    $periodos[] = $periodo;
+
+    foreach ($periodos as $periodo) {
+        $inclui_novo = in_array(true, array_column($periodo, 'novo'), true);
+        if (!$inclui_novo) {
+            continue;
+        }
+
+        $segundos = array_sum(array_map(static fn(array $voo): int => $voo['fim'] - $voo['inicio'], $periodo));
+        if ($segundos > LIMITE_HORAS_TRABALHO * 3600) {
+            $horas = number_format($segundos / 3600, 1, ',', '.');
+            return 'Este voo levaria o tripulante a ' . $horas . ' horas de trabalho sem o descanso de '
+                . DESCANSO_MINIMO_HORAS . ' horas, acima do limite de ' . LIMITE_HORAS_TRABALHO . ' horas.';
+        }
+    }
+
+    return null;
+}
+
 /**
  * Aqui a gente guarda um aviso na sessão para aparecer na próxima página.
  *
