@@ -809,6 +809,33 @@ h3,
     font-size: 13px;
 }
 
+.cartao-gerencia {
+    display: block;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+    padding: 40px 30px;
+    color: #000;
+    text-align: center;
+}
+
+.cartao-gerencia:hover {
+    border-color: #1976d2;
+}
+
+.cartao-gerencia-titulo {
+    margin: 0 0 12px;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.cartao-gerencia-total {
+    margin: 0;
+    color: #1976d2;
+    font-size: 14px;
+    font-weight: bold;
+}
+
 .grade-listas {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
