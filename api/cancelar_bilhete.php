@@ -74,7 +74,7 @@ try {
     
     // A gente só pode cancelar um bilhete que pertence a esta pessoa.
     $comando = $conexao_pdo->prepare(
-        "SELECT p.id, p.voo_id, p.status 
+        "SELECT p.id, p.voo_id, p.status, p.numero_bilhete 
          FROM passagem p
          WHERE p.id = ? AND p.cliente_cpf = ?"
     );
@@ -109,6 +109,8 @@ try {
     // Com o bilhete validado, a gente registra o cancelamento.
     $log .= "\nExecutando UPDATE...\n";
     
+    $conexao_pdo->beginTransaction();
+
     $comando = $conexao_pdo->prepare(
         "UPDATE passagem SET status = 'cancelada', data_cancelamento = NOW() WHERE id = ?"
     );
@@ -118,6 +120,7 @@ try {
     $log .= "  Rows affected: " . $comando->rowCount() . "\n";
     
     if (!$update_result || $comando->rowCount() === 0) {
+        $conexao_pdo->rollBack();
         $log .= "  ERRO: UPDATE falhou\n";
         $log .= "  Error info: " . implode(', ', $comando->errorInfo()) . "\n";
         file_put_contents($log_file, $log, FILE_APPEND);
@@ -127,6 +130,16 @@ try {
         exit;
     }
     
+    registrar_acao(
+        $conexao_pdo,
+        'RESERVA_CANCELADA',
+        "Passagem {$passagem['numero_bilhete']} cancelada.",
+        $passagem['numero_bilhete'],
+        $cpf_usuario
+    );
+
+    $conexao_pdo->commit();
+
     $log .= "\nSUCESSO!\n";
     file_put_contents($log_file, $log, FILE_APPEND);
     
@@ -137,6 +150,10 @@ try {
     ]);
     
 } catch (Throwable $e) {
+    if (isset($conexao_pdo) && $conexao_pdo->inTransaction()) {
+        $conexao_pdo->rollBack();
+    }
+
     $log .= "\nEXCEÇÃO:\n";
     $log .= "  Mensagem: " . $e->getMessage() . "\n";
     $log .= "  Arquivo: " . $e->getFile() . "\n";

@@ -107,10 +107,10 @@ renderizar_cabecalho('Logs', $usuario_logado);
       <table class="tabela-operacional">
         <thead>
           <tr>
-            <th>Data e hora</th>
-            <th>Usuário</th>
-            <th>Ação</th>
-            <th>Descrição</th>
+            <th style="width: 18%;">Data e hora</th>
+            <th style="width: 22%;">Usuário</th>
+            <th style="width: 22%;">Ação</th>
+            <th style="width: 38%;">Descrição</th>
           </tr>
         </thead>
         <tbody>
