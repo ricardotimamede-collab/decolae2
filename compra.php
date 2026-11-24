@@ -31,7 +31,7 @@ $comando = $conexao_pdo->prepare(
             a.modelo, a.identificacao,
             s.id AS assento_id, s.codigo_assento
      FROM voo v
-     JOIN trajeto t ON t.id = v.trajeto_id
+     JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
      JOIN aeronave a ON a.id = v.aeronave_id
      JOIN assento s ON s.aeronave_id = a.id AND s.id = ?
      WHERE v.id = ? AND v.status <> 'cancelado'"

@@ -25,7 +25,7 @@ try {
                 t.origem, t.destino 
          FROM voo v 
          JOIN aeronave a ON a.id = v.aeronave_id 
-         JOIN trajeto t ON t.id = v.trajeto_id 
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida 
          WHERE v.id = ? AND v.status <> 'cancelado'"
     );
     $comando->execute([$id_voo]);

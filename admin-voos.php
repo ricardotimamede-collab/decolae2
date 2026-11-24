@@ -62,7 +62,7 @@ function obter_horarios_voo(PDO $conexao, int $id_voo): ?array
                 TIMESTAMP(v.data_voo, t.h_partida) AS partida_em,
                 TIMESTAMP(v.data_voo, t.h_chegada) + INTERVAL (t.h_chegada < t.h_partida) DAY AS chegada_em
          FROM voo v
-         JOIN trajeto t ON t.id = v.trajeto_id
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
          WHERE v.id = ?'
     );
     $comando->execute([$id_voo]);
@@ -90,7 +90,7 @@ function verificar_conflito_aeronave(
     $comando = $conexao->prepare(
         "SELECT v.numero_voo
          FROM voo v
-         JOIN trajeto t ON t.id = v.trajeto_id
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
          WHERE v.aeronave_id = ?
          AND v.id <> ?
          AND v.status <> 'cancelado'
@@ -117,7 +117,7 @@ function verificar_localizacao_aeronave(
     $comando = $conexao->prepare(
         "SELECT v.numero_voo, t.destino
          FROM voo v
-         JOIN trajeto t ON t.id = v.trajeto_id
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
          WHERE v.aeronave_id = ?
          AND v.id <> ?
          AND v.status <> 'cancelado'
@@ -136,7 +136,7 @@ function verificar_localizacao_aeronave(
     $comando = $conexao->prepare(
         "SELECT v.numero_voo, t.origem
          FROM voo v
-         JOIN trajeto t ON t.id = v.trajeto_id
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
          WHERE v.aeronave_id = ?
          AND v.id <> ?
          AND v.status <> 'cancelado'
@@ -177,7 +177,7 @@ function verificar_conflito_tripulante(
                 TIMESTAMP(v2.data_voo, t2.h_chegada) + INTERVAL (t2.h_chegada < t2.h_partida) DAY AS chegada_em
          FROM escala e
          JOIN voo v2 ON v2.id = e.voo_id
-         JOIN trajeto t2 ON t2.id = v2.trajeto_id
+         JOIN trajeto t2 ON t2.origem = v2.origem AND t2.destino = v2.destino AND t2.h_partida = v2.h_partida
          WHERE e.tripulante_cpf = ?
          AND e.voo_id <> ?
          AND v2.status <> 'cancelado'"
@@ -239,7 +239,7 @@ if (eh_post()) {
         if ($acao === 'voo') {
             // Primeiro a gente lê os dados enviados.
             $numero_voo = strtoupper(obter_campo_obrigatorio_admin('numero_voo'));
-            $id_trajeto = (int) obter_campo_obrigatorio_admin('id_trajeto');
+            $codigo_trajeto = obter_campo_obrigatorio_admin('id_trajeto');
             $id_aeronave = (int) obter_campo_obrigatorio_admin('id_aeronave');
             $data_voo = normalizar_data(obter_campo_obrigatorio_admin('data_voo'));
             
@@ -260,9 +260,10 @@ if (eh_post()) {
             
             // Os horários de partida e chegada vêm do trajeto escolhido.
             $comando_trajeto = $conexao_pdo->prepare(
-                'SELECT origem, destino, h_partida, h_chegada FROM trajeto WHERE id = ?'
+                'SELECT origem, destino, h_partida, h_chegada FROM trajeto
+                 WHERE origem = ? AND destino = ? AND h_partida = ?'
             );
-            $comando_trajeto->execute([$id_trajeto]);
+            $comando_trajeto->execute(decodificar_trajeto($codigo_trajeto));
             $dados_trajeto = $comando_trajeto->fetch();
             
             // Sem um trajeto válido, não dá para criar o voo.
@@ -317,15 +318,17 @@ if (eh_post()) {
                 
                 // Aqui a gente prepara o novo registro do voo.
                 $comando = $conexao_pdo->prepare(
-                    "INSERT INTO voo (numero_voo, data_voo, trajeto_id, aeronave_id, admin_cpf, valor_base, status)
-                     VALUES (?, ?, ?, ?, ?, ?, 'programado')"
+                    "INSERT INTO voo (numero_voo, data_voo, origem, destino, h_partida, aeronave_id, admin_cpf, valor_base, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'programado')"
                 );
                 
                 // Agora a gente grava o voo no banco.
                 $comando->execute([
                     $numero_voo,
                     $data_voo,
-                    $id_trajeto,
+                    $dados_trajeto['origem'],
+                    $dados_trajeto['destino'],
+                    $dados_trajeto['h_partida'],
                     $id_aeronave,
                     $usuario_logado['cpf'],
                     (float) ($_POST['valor_base'] ?? 649.90)
@@ -422,7 +425,7 @@ if (eh_post()) {
         elseif ($acao === 'voo_editar') {
             $id_voo = (int) obter_campo_obrigatorio_admin('id');
             $numero_voo = strtoupper(obter_campo_obrigatorio_admin('numero_voo'));
-            $id_trajeto = (int) obter_campo_obrigatorio_admin('id_trajeto');
+            $codigo_trajeto = obter_campo_obrigatorio_admin('id_trajeto');
             $id_aeronave = (int) obter_campo_obrigatorio_admin('id_aeronave');
             $data_voo = normalizar_data(obter_campo_obrigatorio_admin('data_voo'));
             $valor_base = (float) obter_campo_obrigatorio_admin('valor_base');
@@ -450,8 +453,10 @@ if (eh_post()) {
                 throw new InvalidArgumentException("Já existe um voo {$numero_voo} cadastrado nessa data.");
             }
 
-            $comando = $conexao_pdo->prepare('SELECT origem, destino, h_partida, h_chegada FROM trajeto WHERE id = ?');
-            $comando->execute([$id_trajeto]);
+            $comando = $conexao_pdo->prepare(
+                'SELECT origem, destino, h_partida, h_chegada FROM trajeto WHERE origem = ? AND destino = ? AND h_partida = ?'
+            );
+            $comando->execute(decodificar_trajeto($codigo_trajeto));
             $dados_trajeto = $comando->fetch();
             if (!$dados_trajeto) {
                 throw new InvalidArgumentException('Trajeto não encontrado.');
@@ -514,9 +519,9 @@ if (eh_post()) {
             }
 
             $comando = $conexao_pdo->prepare(
-                'UPDATE voo SET numero_voo = ?, data_voo = ?, trajeto_id = ?, aeronave_id = ?, valor_base = ? WHERE id = ?'
+                'UPDATE voo SET numero_voo = ?, data_voo = ?, origem = ?, destino = ?, h_partida = ?, aeronave_id = ?, valor_base = ? WHERE id = ?'
             );
-            $comando->execute([$numero_voo, $data_voo, $id_trajeto, $id_aeronave, $valor_base, $id_voo]);
+            $comando->execute([$numero_voo, $data_voo, $dados_trajeto['origem'], $dados_trajeto['destino'], $dados_trajeto['h_partida'], $id_aeronave, $valor_base, $id_voo]);
 
             $comando = $conexao_pdo->prepare('DELETE FROM escala WHERE voo_id = ?');
             $comando->execute([$id_voo]);
@@ -602,9 +607,9 @@ if (eh_post() && !(($_POST['acao'] ?? '') === 'voo_editar' && $mensagem_erro)) {
  * Aqui ficam os trajetos que podem ser usados em novos voos.
  */
 $trajetos = $conexao_pdo->query(
-    'SELECT id, origem, destino, h_partida, h_chegada
+    'SELECT origem, destino, h_partida, h_chegada
      FROM trajeto
-     ORDER BY origem, destino'
+     ORDER BY origem, destino, h_partida'
 )->fetchAll();
 
 /**
@@ -641,7 +646,7 @@ $voos = $conexao_pdo->query(
             SUM(e.funcao_tripulante = 'comissario') AS comissarios,
             (SELECT COUNT(*) FROM passagem p WHERE p.voo_id = v.id) AS passagens
      FROM voo v
-     JOIN trajeto t ON t.id = v.trajeto_id
+     JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
      JOIN aeronave a ON a.id = v.aeronave_id
      LEFT JOIN escala e ON e.voo_id = v.id
      GROUP BY v.id, v.numero_voo, v.data_voo, t.h_partida, t.origem, t.destino, a.identificacao, a.modelo
@@ -664,7 +669,7 @@ $voo_em_edicao = null;
 $equipe_em_edicao = ['piloto' => '', 'copiloto' => '', 'comissario1' => '', 'comissario2' => ''];
 $id_edicao = filter_input(INPUT_GET, 'editar', FILTER_VALIDATE_INT);
 if ($id_edicao) {
-    $comando = $conexao_pdo->prepare('SELECT id, numero_voo, data_voo, trajeto_id, aeronave_id, valor_base FROM voo WHERE id = ?');
+    $comando = $conexao_pdo->prepare('SELECT id, numero_voo, data_voo, origem, destino, h_partida, aeronave_id, valor_base FROM voo WHERE id = ?');
     $comando->execute([$id_edicao]);
     $voo_em_edicao = $comando->fetch() ?: null;
 
@@ -690,6 +695,9 @@ if ($id_edicao) {
 }
 
 $valor_voo = fn(string $campo): string => esc($_POST[$campo] ?? (string) ($voo_em_edicao[$campo] ?? ''));
+$trajeto_escolhido = (string) ($_POST['id_trajeto'] ?? (
+    $voo_em_edicao ? codificar_trajeto($voo_em_edicao['origem'], $voo_em_edicao['destino'], $voo_em_edicao['h_partida']) : ''
+));
 $valor_equipe = fn(string $campo): string => (string) ($_POST[$campo] ?? $equipe_em_edicao[$campo]);
 $pilotos_lista = array_filter($tripulantes, static fn(array $t): bool => $t['funcao'] === 'piloto');
 $copilotos_lista = array_filter($tripulantes, static fn(array $t): bool => in_array($t['funcao'], ['piloto', 'copiloto'], true));
@@ -736,7 +744,8 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
           <label>Trajeto</label>
           <select name="id_trajeto" required>
             <?php foreach ($trajetos as $trajeto): ?>
-              <option value="<?= $trajeto['id'] ?>" <?= $valor_voo('trajeto_id') === (string) $trajeto['id'] ? 'selected' : '' ?>>
+              <?php $codigo_trajeto_opcao = codificar_trajeto($trajeto['origem'], $trajeto['destino'], $trajeto['h_partida']); ?>
+              <option value="<?= esc($codigo_trajeto_opcao) ?>" <?= $trajeto_escolhido === $codigo_trajeto_opcao ? 'selected' : '' ?>>
                 <?= esc($trajeto['origem']) ?> → <?= esc($trajeto['destino']) ?>
                 (<?= esc(substr($trajeto['h_partida'], 0, 5)) ?>)
               </option>
@@ -801,7 +810,7 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
           <select name="id_trajeto" required>
             <option value="">Selecione...</option>
             <?php foreach ($trajetos as $trajeto): ?>
-              <option value="<?= $trajeto['id'] ?>">
+              <option value="<?= esc(codificar_trajeto($trajeto['origem'], $trajeto['destino'], $trajeto['h_partida'])) ?>">
                 <?= esc($trajeto['origem']) ?> → <?= esc($trajeto['destino']) ?>
                 (<?= esc(substr($trajeto['h_partida'], 0, 5)) ?>)
               </option>

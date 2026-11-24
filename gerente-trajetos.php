@@ -11,12 +11,27 @@ $usuarioLogado = require_role($conexaoBancoDados, 'gerente');
 $mensagem = obter_aviso()['texto'] ?? null;
 $erro = null;
 
-function contar_voos_do_trajeto(PDO $conexao, int $id_trajeto): int
+function contar_voos_do_trajeto(PDO $conexao, array $chave): int
 {
-    $comando = $conexao->prepare('SELECT COUNT(*) FROM voo WHERE trajeto_id = ?');
-    $comando->execute([$id_trajeto]);
+    $comando = $conexao->prepare('SELECT COUNT(*) FROM voo WHERE origem = ? AND destino = ? AND h_partida = ?');
+    $comando->execute($chave);
 
     return (int) $comando->fetchColumn();
+}
+
+function buscar_trajeto(PDO $conexao, array $chave): ?array
+{
+    $comando = $conexao->prepare(
+        'SELECT origem, destino, h_partida, h_chegada FROM trajeto WHERE origem = ? AND destino = ? AND h_partida = ?'
+    );
+    $comando->execute($chave);
+
+    return $comando->fetch() ?: null;
+}
+
+function registro_do_trajeto(string $origem, string $destino, string $partida): string
+{
+    return mb_substr('trajeto:' . $origem . '|' . $destino . '|' . substr($partida, 0, 5), 0, 120);
 }
 
 function ler_dados_trajeto(): array
@@ -51,7 +66,7 @@ if (is_post()) {
                 $conexaoBancoDados,
                 'TRAJETO_CRIADO',
                 "Trajeto {$origem} → {$destino} cadastrado.",
-                'trajeto:' . $conexaoBancoDados->lastInsertId(),
+                registro_do_trajeto($origem, $destino, $partida),
                 $usuarioLogado['cpf']
             );
 
@@ -61,10 +76,14 @@ if (is_post()) {
         }
 
         if ($acao === 'trajeto_editar') {
-            $id_trajeto = (int) obter_campo_obrigatorio('id');
+            $chave_atual = decodificar_trajeto(obter_campo_obrigatorio('codigo'));
             [$origem, $destino, $partida, $chegada] = ler_dados_trajeto();
 
-            $voos = contar_voos_do_trajeto($conexaoBancoDados, $id_trajeto);
+            if (!buscar_trajeto($conexaoBancoDados, $chave_atual)) {
+                throw new InvalidArgumentException('Trajeto não encontrado.');
+            }
+
+            $voos = contar_voos_do_trajeto($conexaoBancoDados, $chave_atual);
             if ($voos > 0) {
                 throw new InvalidArgumentException(
                     'Este trajeto não pode ser alterado porque está em ' . descrever_voos($voos) . '.'
@@ -72,15 +91,16 @@ if (is_post()) {
             }
 
             $comando = $conexaoBancoDados->prepare(
-                'UPDATE trajeto SET origem = ?, destino = ?, h_partida = ?, h_chegada = ? WHERE id = ?'
+                'UPDATE trajeto SET origem = ?, destino = ?, h_partida = ?, h_chegada = ?
+                 WHERE origem = ? AND destino = ? AND h_partida = ?'
             );
-            $comando->execute([$origem, $destino, $partida, $chegada, $id_trajeto]);
+            $comando->execute([$origem, $destino, $partida, $chegada, ...$chave_atual]);
 
             log_action(
                 $conexaoBancoDados,
                 'TRAJETO_ALTERADO',
                 "Trajeto {$origem} → {$destino} alterado.",
-                'trajeto:' . $id_trajeto,
+                registro_do_trajeto($origem, $destino, $partida),
                 $usuarioLogado['cpf']
             );
 
@@ -90,31 +110,28 @@ if (is_post()) {
         }
 
         if ($acao === 'trajeto_excluir') {
-            $id_trajeto = (int) obter_campo_obrigatorio('id');
-
-            $comando = $conexaoBancoDados->prepare('SELECT origem, destino FROM trajeto WHERE id = ?');
-            $comando->execute([$id_trajeto]);
-            $trajeto = $comando->fetch();
+            $chave_atual = decodificar_trajeto(obter_campo_obrigatorio('codigo'));
+            $trajeto = buscar_trajeto($conexaoBancoDados, $chave_atual);
 
             if (!$trajeto) {
                 throw new InvalidArgumentException('Trajeto não encontrado.');
             }
 
-            $voos = contar_voos_do_trajeto($conexaoBancoDados, $id_trajeto);
+            $voos = contar_voos_do_trajeto($conexaoBancoDados, $chave_atual);
             if ($voos > 0) {
                 throw new InvalidArgumentException(
                     'Este trajeto não pode ser excluído porque está em ' . descrever_voos($voos) . '.'
                 );
             }
 
-            $comando = $conexaoBancoDados->prepare('DELETE FROM trajeto WHERE id = ?');
-            $comando->execute([$id_trajeto]);
+            $comando = $conexaoBancoDados->prepare('DELETE FROM trajeto WHERE origem = ? AND destino = ? AND h_partida = ?');
+            $comando->execute($chave_atual);
 
             log_action(
                 $conexaoBancoDados,
                 'TRAJETO_EXCLUIDO',
                 "Trajeto {$trajeto['origem']} → {$trajeto['destino']} excluído.",
-                'trajeto:' . $id_trajeto,
+                registro_do_trajeto($trajeto['origem'], $trajeto['destino'], $trajeto['h_partida']),
                 $usuarioLogado['cpf']
             );
 
@@ -128,13 +145,18 @@ if (is_post()) {
         }
 
         $erro = $excecao->getMessage();
+
+        if ($excecao instanceof PDOException && (int) ($excecao->errorInfo[1] ?? 0) === 1062) {
+            $erro = 'Já existe um trajeto com essa origem, destino e horário de partida.';
+        }
     }
 }
 
 $busca = trim((string) ($_GET['busca'] ?? ''));
 $comando = $conexaoBancoDados->prepare(
-    'SELECT t.id, t.origem, t.destino, t.h_partida, t.h_chegada,
-            (SELECT COUNT(*) FROM voo v WHERE v.trajeto_id = t.id) AS voos
+    'SELECT t.origem, t.destino, t.h_partida, t.h_chegada,
+            (SELECT COUNT(*) FROM voo v
+             WHERE v.origem = t.origem AND v.destino = t.destino AND v.h_partida = t.h_partida) AS voos
      FROM trajeto t
      WHERE t.origem LIKE ? OR t.destino LIKE ?
      ORDER BY t.origem, t.destino, t.h_partida'
@@ -143,14 +165,17 @@ $comando->execute(['%' . $busca . '%', '%' . $busca . '%']);
 $trajetos = $comando->fetchAll();
 
 $trajeto_em_edicao = null;
-$id_edicao = filter_input(INPUT_GET, 'editar', FILTER_VALIDATE_INT);
-if ($id_edicao) {
-    $comando = $conexaoBancoDados->prepare('SELECT id, origem, destino, h_partida, h_chegada FROM trajeto WHERE id = ?');
-    $comando->execute([$id_edicao]);
-    $trajeto_em_edicao = $comando->fetch() ?: null;
+$codigo_edicao = (string) ($_GET['editar'] ?? '');
+if ($codigo_edicao !== '') {
+    try {
+        $chave_edicao = decodificar_trajeto($codigo_edicao);
+        $trajeto_em_edicao = buscar_trajeto($conexaoBancoDados, $chave_edicao);
+    } catch (InvalidArgumentException $excecao) {
+        $trajeto_em_edicao = null;
+    }
 
     if ($trajeto_em_edicao) {
-        $voos_em_uso = contar_voos_do_trajeto($conexaoBancoDados, $id_edicao);
+        $voos_em_uso = contar_voos_do_trajeto($conexaoBancoDados, $chave_edicao);
         if ($voos_em_uso > 0) {
             $erro = 'Este trajeto não pode ser alterado porque está em ' . descrever_voos($voos_em_uso) . '.';
             $trajeto_em_edicao = null;
@@ -185,11 +210,11 @@ renderizar_cabecalho('Trajetos', $usuarioLogado);
 
     <div class="cartao-formulario">
       <h2 class="titulo-formulario"><?= $trajeto_em_edicao ? 'Editar Trajeto' : 'Cadastrar Trajeto' ?></h2>
-      <form method="post" action="gerente-trajetos.php<?= $trajeto_em_edicao ? '?editar=' . (int) $trajeto_em_edicao['id'] : '' ?>">
+      <form method="post" action="gerente-trajetos.php<?= $trajeto_em_edicao ? '?editar=' . esc($codigo_edicao) : '' ?>">
         <input type="hidden" name="csrf_token" value="<?=esc(csrf_token())?>">
         <input type="hidden" name="acao" value="<?= $trajeto_em_edicao ? 'trajeto_editar' : 'trajeto' ?>">
         <?php if($trajeto_em_edicao): ?>
-          <input type="hidden" name="id" value="<?= (int) $trajeto_em_edicao['id'] ?>">
+          <input type="hidden" name="codigo" value="<?= esc($codigo_edicao) ?>">
         <?php endif; ?>
 
         <div class="campo-form">
@@ -242,11 +267,11 @@ renderizar_cabecalho('Trajetos', $usuarioLogado);
                 <span class="texto-secundario texto-pequeno">Em uso · <?=esc(descrever_voos((int) $r['voos']))?></span>
               <?php else: ?>
                 <div class="flex gap-2">
-                  <a class="botao-pequeno" href="gerente-trajetos.php?editar=<?= (int) $r['id'] ?>">Editar</a>
+                  <a class="botao-pequeno" href="gerente-trajetos.php?editar=<?= esc(codificar_trajeto($r['origem'], $r['destino'], $r['h_partida'])) ?>">Editar</a>
                   <form method="post" data-confirmar="Excluir o trajeto <?=esc($r['origem'])?> → <?=esc($r['destino'])?>?">
                     <input type="hidden" name="csrf_token" value="<?=esc(csrf_token())?>">
                     <input type="hidden" name="acao" value="trajeto_excluir">
-                    <input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
+                    <input type="hidden" name="codigo" value="<?= esc(codificar_trajeto($r['origem'], $r['destino'], $r['h_partida'])) ?>">
                     <button type="submit" class="botao-pequeno botao-perigo">Excluir</button>
                   </form>
                 </div>

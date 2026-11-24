@@ -35,12 +35,12 @@ try {
          FROM (
              SELECT t.origem AS codigo
              FROM voo v
-             JOIN trajeto t ON t.id = v.trajeto_id
+             JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
              WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE()
              UNION
              SELECT t.destino AS codigo
              FROM voo v
-             JOIN trajeto t ON t.id = v.trajeto_id
+             JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
              WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE()
          ) AS aeroportos_disponiveis
          ORDER BY codigo"
@@ -59,7 +59,7 @@ try {
                     WHERE voo_id = v.id AND status IN ('confirmada', 'checkin')
                 ), a.fileiras * a.assentos_por_fileira) AS assentos_livres
          FROM voo v
-         JOIN trajeto t ON t.id = v.trajeto_id
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
          JOIN aeronave a ON a.id = v.aeronave_id
          WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE()
            AND v.id IN (

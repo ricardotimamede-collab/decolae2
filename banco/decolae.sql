@@ -327,7 +327,8 @@ INSERT INTO `auditoria_tabela` (`id`, `tabela`, `registro_id`, `usuario_cpf`, `o
 (50,'passagem',42,'14434473616','INSERT',NULL,'{\"numero_bilhete\": \"3EF90580F2\", \"voo_id\": 51, \"assento_id\": 408, \"status\": \"confirmada\"}','2026-11-23 20:03:47'),
 (51,'passagem',43,'12345678904','INSERT',NULL,'{\"numero_bilhete\": \"B8DB67F10E\", \"voo_id\": 67, \"assento_id\": 424, \"status\": \"confirmada\"}','2026-11-24 16:09:09'),
 (52,'passagem',44,'12345678904','INSERT',NULL,'{\"numero_bilhete\": \"9186B0762F\", \"voo_id\": 67, \"assento_id\": 420, \"status\": \"confirmada\"}','2026-11-24 16:44:56'),
-(53,'passagem',43,'12345678904','UPDATE','{\"status\": \"confirmada\", \"versao\": 1}','{\"status\": \"cancelada\", \"versao\": 2}','2026-11-24 16:45:04');
+(53,'passagem',43,'12345678904','UPDATE','{\"status\": \"confirmada\", \"versao\": 1}','{\"status\": \"cancelada\", \"versao\": 2}','2026-11-24 16:45:04'),
+(54,'passagem',44,'12345678904','UPDATE','{\"status\": \"confirmada\", \"versao\": 1}','{\"status\": \"cancelada\", \"versao\": 2}','2026-11-24 19:59:22');
 
 -- --------------------------------------------------------
 
@@ -753,7 +754,23 @@ INSERT INTO `log` (`id`, `usuario_cpf`, `data_hora`, `acao`, `descricao`, `regis
 (379,'12345678901','2026-11-24 18:12:49','VOO_EXCLUIDO','Voo G7-2601 de 2026-11-26 excluído.','voo:72'),
 (380,'12345678901','2026-11-24 18:13:52','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
 (381,'12345678901','2026-11-24 18:15:23','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
-(382,'12345678901','2026-11-24 18:15:30','VOO_EXCLUIDO','Voo G7-2801 de 2026-11-28 excluído.','voo:74');
+(382,'12345678901','2026-11-24 18:15:30','VOO_EXCLUIDO','Voo G7-2801 de 2026-11-28 excluído.','voo:74'),
+(383,'12345678901','2026-11-24 18:29:45','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
+(384,'12345678902','2026-11-24 18:29:46','LOGIN_GERENTE','Login realizado no perfil Gerente.','usuario:12345678902'),
+(385,'12345678903','2026-11-24 18:29:47','LOGIN_TRIPULANTE','Login realizado no perfil Tripulante.','usuario:12345678903'),
+(386,'12345678904','2026-11-24 19:57:55','LOGIN_CLIENTE','Cliente realizou login.','usuario:12345678904'),
+(387,'12345678904','2026-11-24 19:58:51','LOGIN_CLIENTE','Cliente realizou login.','usuario:12345678904'),
+(388,'12345678904','2026-11-24 19:59:22','RESERVA_CANCELADA','Passagem 9186B0762F cancelada.','9186B0762F'),
+(389,'12345678901','2026-11-24 20:00:21','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
+(390,'12345678901','2026-11-24 20:01:23','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
+(391,'12345678901','2026-11-24 20:01:39','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
+(392,'12345678904','2026-11-24 20:35:01','LOGIN_CLIENTE','Cliente realizou login.','usuario:12345678904'),
+(393,'12345678904','2026-11-24 20:55:50','LOGIN_CLIENTE','Cliente realizou login.','usuario:12345678904'),
+(394,'12345678901','2026-11-24 22:12:15','LOGIN_ADMIN','Login realizado no perfil Administrador.','usuario:12345678901'),
+(395,'12345678902','2026-11-24 22:12:16','LOGIN_GERENTE','Login realizado no perfil Gerente.','usuario:12345678902'),
+(396,'00000000024','2026-11-24 22:12:17','LOGIN_TRIPULANTE','Login realizado no perfil Tripulante.','usuario:00000000024'),
+(397,'12345678904','2026-11-24 22:12:17','LOGIN_CLIENTE','Cliente realizou login.','usuario:12345678904'),
+(400,'12345678902','2026-11-24 22:12:32','TRAJETO_CRIADO','Trajeto S?o Paulo (GRU) → Rio de Janeiro (GIG) cadastrado.','trajeto:S?o Paulo (GRU)|Rio de Janeiro (GIG)|08:00');
 
 -- --------------------------------------------------------
 
@@ -782,7 +799,7 @@ CREATE TABLE `passagem` (
 
 INSERT INTO `passagem` (`id`, `numero_bilhete`, `data_compra`, `valor`, `status`, `data_cancelamento`, `cliente_cpf`, `voo_id`, `assento_id`, `data_atualizacao`, `versao`, `assento_ativo`) VALUES
 (43,'B8DB67F10E','2026-11-24 16:09:09',649.90,'cancelada','2026-11-24 13:45:04','12345678904',67,424,'2026-11-24 16:45:04',2,NULL),
-(44,'9186B0762F','2026-11-24 16:44:56',649.90,'confirmada',NULL,'12345678904',67,420,'2026-11-24 16:44:56',1,1);
+(44,'9186B0762F','2026-11-24 16:44:56',649.90,'cancelada','2026-11-24 16:59:22','12345678904',67,420,'2026-11-24 19:59:22',2,NULL);
 
 --
 -- Acionadores `passagem`
@@ -824,7 +841,6 @@ DELIMITER ;
 --
 
 CREATE TABLE `trajeto` (
-  `id` int(10) UNSIGNED NOT NULL,
   `origem` varchar(60) NOT NULL,
   `destino` varchar(60) NOT NULL,
   `h_partida` time NOT NULL,
@@ -836,19 +852,15 @@ CREATE TABLE `trajeto` (
 -- Despejando dados para a tabela `trajeto`
 --
 
-INSERT INTO `trajeto` (`id`, `origem`, `destino`, `h_partida`, `h_chegada`, `gerente_cpf`) VALUES
-(1,'São Paulo (GRU)','Rio de Janeiro (GIG)','08:00:00','10:00:00','12345678902'),
-(3,'São Paulo (GRU)','Brasília (BSB)','10:30:00','12:45:00','12345678902'),
-(6,'São Paulo (GRU)','São Luís (SLZ)','06:00:00','08:30:00','12345678902'),
-(7,'São Luís (SLZ)','São Paulo (GRU)','19:00:00','21:30:00','12345678902'),
-(9,'São Paulo (GRU)','Recife (REC)','11:00:00','13:30:00','12345678902'),
-(11,'Belo Horizonte (CNF)','São Paulo (GRU)','15:30:00','17:00:00','12345678902'),
-(12,'São Paulo (GRU)','Brasília (BSB)','10:30:00','12:45:00','12345678902'),
-(13,'Rio de Janeiro (GIG)','São Paulo (GRU)','14:00:00','15:45:00','12345678902'),
-(15,'São Paulo (GRU)','São Luís (SLZ)','06:00:00','08:30:00','12345678902'),
-(16,'São Luís (SLZ)','São Paulo (GRU)','19:00:00','21:30:00','12345678902'),
-(18,'São Paulo (GRU)','Recife (REC)','11:00:00','13:30:00','12345678902'),
-(19,'Brasília (BSB)','Belo Horizonte (CNF)','09:00:00','10:30:00','12345678902');
+INSERT INTO `trajeto` (`origem`, `destino`, `h_partida`, `h_chegada`, `gerente_cpf`) VALUES
+('Belo Horizonte (CNF)','São Paulo (GRU)','15:30:00','17:00:00','12345678902'),
+('Brasília (BSB)','Belo Horizonte (CNF)','09:00:00','10:30:00','12345678902'),
+('Rio de Janeiro (GIG)','São Paulo (GRU)','14:00:00','15:45:00','12345678902'),
+('São Luís (SLZ)','São Paulo (GRU)','19:00:00','21:30:00','12345678902'),
+('São Paulo (GRU)','Brasília (BSB)','10:30:00','12:45:00','12345678902'),
+('São Paulo (GRU)','Recife (REC)','11:00:00','13:30:00','12345678902'),
+('São Paulo (GRU)','Rio de Janeiro (GIG)','08:00:00','10:00:00','12345678902'),
+('São Paulo (GRU)','São Luís (SLZ)','06:00:00','08:30:00','12345678902');
 
 -- --------------------------------------------------------
 
@@ -930,7 +942,9 @@ CREATE TABLE `voo` (
   `id` int(10) UNSIGNED NOT NULL,
   `numero_voo` varchar(12) NOT NULL,
   `data_voo` date NOT NULL,
-  `trajeto_id` int(10) UNSIGNED NOT NULL,
+  `origem` varchar(60) NOT NULL,
+  `destino` varchar(60) NOT NULL,
+  `h_partida` time NOT NULL,
   `aeronave_id` int(10) UNSIGNED NOT NULL,
   `admin_cpf` char(11) NOT NULL,
   `valor_base` decimal(10,2) NOT NULL DEFAULT 649.90,
@@ -943,19 +957,19 @@ CREATE TABLE `voo` (
 -- Despejando dados para a tabela `voo`
 --
 
-INSERT INTO `voo` (`id`, `numero_voo`, `data_voo`, `trajeto_id`, `aeronave_id`, `admin_cpf`, `valor_base`, `status`, `data_atualizacao`, `versao`) VALUES
-(67,'QWE','2026-11-27',19,8,'12345678901',649.90,'programado','2026-11-24 14:43:26',1),
-(68,'JKL','2026-11-29',11,8,'12345678901',649.90,'programado','2026-11-24 14:44:05',1),
-(75,'G7-2802','2026-11-28',13,2,'12345678901',329.90,'programado','2026-11-24 16:56:24',1),
-(76,'G7-2901','2026-11-29',6,2,'12345678901',499.90,'programado','2026-11-24 16:56:24',1),
-(77,'G7-2902','2026-11-29',7,2,'12345678901',479.90,'programado','2026-11-24 16:56:24',1),
-(78,'G7-3001','2026-11-30',1,8,'12345678901',349.90,'programado','2026-11-24 16:56:24',1),
-(79,'G7-3002','2026-11-30',13,8,'12345678901',329.90,'programado','2026-11-24 16:56:24',1),
-(80,'G7-0201','2026-12-02',6,2,'12345678901',499.90,'programado','2026-11-24 16:56:24',1),
-(81,'G7-0202','2026-12-02',9,8,'12345678901',459.90,'programado','2026-11-24 16:56:24',1),
-(82,'G7-0203','2026-12-02',7,2,'12345678901',479.90,'programado','2026-11-24 16:56:24',1),
-(83,'G7-0301','2026-12-03',1,2,'12345678901',349.90,'programado','2026-11-24 16:56:24',1),
-(84,'G7-0302','2026-12-03',13,2,'12345678901',329.90,'programado','2026-11-24 16:56:24',1);
+INSERT INTO `voo` (`id`, `numero_voo`, `data_voo`, `origem`, `destino`, `h_partida`, `aeronave_id`, `admin_cpf`, `valor_base`, `status`, `data_atualizacao`, `versao`) VALUES
+(67,'QWE','2026-11-27','Brasília (BSB)','Belo Horizonte (CNF)','09:00:00',8,'12345678901',649.90,'programado','2026-11-24 22:10:38',2),
+(68,'JKL','2026-11-29','Belo Horizonte (CNF)','São Paulo (GRU)','15:30:00',8,'12345678901',649.90,'programado','2026-11-24 22:10:38',2),
+(75,'G7-2802','2026-11-28','Rio de Janeiro (GIG)','São Paulo (GRU)','14:00:00',2,'12345678901',329.90,'programado','2026-11-24 22:10:38',2),
+(76,'G7-2901','2026-11-29','São Paulo (GRU)','São Luís (SLZ)','06:00:00',2,'12345678901',499.90,'programado','2026-11-24 22:10:38',2),
+(77,'G7-2902','2026-11-29','São Luís (SLZ)','São Paulo (GRU)','19:00:00',2,'12345678901',479.90,'programado','2026-11-24 22:10:38',2),
+(78,'G7-3001','2026-11-30','São Paulo (GRU)','Rio de Janeiro (GIG)','08:00:00',8,'12345678901',349.90,'programado','2026-11-24 22:10:38',2),
+(79,'G7-3002','2026-11-30','Rio de Janeiro (GIG)','São Paulo (GRU)','14:00:00',8,'12345678901',329.90,'programado','2026-11-24 22:10:38',2),
+(80,'G7-0201','2026-12-02','São Paulo (GRU)','São Luís (SLZ)','06:00:00',2,'12345678901',499.90,'programado','2026-11-24 22:10:38',2),
+(81,'G7-0202','2026-12-02','São Paulo (GRU)','Recife (REC)','11:00:00',8,'12345678901',459.90,'programado','2026-11-24 22:10:38',2),
+(82,'G7-0203','2026-12-02','São Luís (SLZ)','São Paulo (GRU)','19:00:00',2,'12345678901',479.90,'programado','2026-11-24 22:10:38',2),
+(83,'G7-0301','2026-12-03','São Paulo (GRU)','Rio de Janeiro (GIG)','08:00:00',2,'12345678901',349.90,'programado','2026-11-24 22:10:38',2),
+(84,'G7-0302','2026-12-03','Rio de Janeiro (GIG)','São Paulo (GRU)','14:00:00',2,'12345678901',329.90,'programado','2026-11-24 22:10:38',2);
 
 --
 -- Acionadores `voo`
@@ -1069,9 +1083,8 @@ ALTER TABLE `passagem`
 -- Índices de tabela `trajeto`
 --
 ALTER TABLE `trajeto`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_trajeto_gerente` (`gerente_cpf`),
-  ADD KEY `idx_trajeto_rota` (`origem`,`destino`);
+  ADD PRIMARY KEY (`origem`,`destino`,`h_partida`),
+  ADD KEY `fk_trajeto_gerente` (`gerente_cpf`);
 
 --
 -- Índices de tabela `tripulante`
@@ -1093,9 +1106,9 @@ ALTER TABLE `usuario`
 ALTER TABLE `voo`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_voo_numero_data` (`numero_voo`,`data_voo`),
-  ADD KEY `fk_voo_trajeto` (`trajeto_id`),
+  ADD KEY `fk_voo_trajeto` (`origem`,`destino`,`h_partida`),
   ADD KEY `fk_voo_admin` (`admin_cpf`),
-  ADD KEY `idx_voo_busca` (`data_voo`,`status`,`trajeto_id`),
+  ADD KEY `idx_voo_busca` (`data_voo`,`status`),
   ADD KEY `idx_voo_aeronave_data` (`aeronave_id`,`data_voo`),
   ADD KEY `idx_voo_versao` (`id`,`versao`);
 
@@ -1119,7 +1132,7 @@ ALTER TABLE `assento`
 -- AUTO_INCREMENT de tabela `auditoria_tabela`
 --
 ALTER TABLE `auditoria_tabela`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT de tabela `escala`
@@ -1131,19 +1144,13 @@ ALTER TABLE `escala`
 -- AUTO_INCREMENT de tabela `log`
 --
 ALTER TABLE `log`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=383;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=404;
 
 --
 -- AUTO_INCREMENT de tabela `passagem`
 --
 ALTER TABLE `passagem`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
-
---
--- AUTO_INCREMENT de tabela `trajeto`
---
-ALTER TABLE `trajeto`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de tabela `voo`
@@ -1158,7 +1165,7 @@ ALTER TABLE `voo`
 --
 DROP TABLE IF EXISTS `vw_voos_disponibilidade`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_voos_disponibilidade`  AS SELECT `v`.`id` AS `id`, `v`.`numero_voo` AS `numero_voo`, `v`.`data_voo` AS `data_voo`, `v`.`status` AS `status`, `v`.`valor_base` AS `valor_base`, `t`.`origem` AS `origem`, `t`.`destino` AS `destino`, `t`.`h_partida` AS `h_partida`, `t`.`h_chegada` AS `h_chegada`, concat(`v`.`data_voo`,' ',`t`.`h_partida`) AS `partida_em`, timestamp(`v`.`data_voo`,`t`.`h_chegada`) + interval (`t`.`h_chegada` < `t`.`h_partida`) day AS `chegada_em`, `a`.`modelo` AS `modelo`, `a`.`identificacao` AS `identificacao`, `a`.`fileiras`* `a`.`assentos_por_fileira` AS `capacidade`, coalesce(`a`.`fileiras` * `a`.`assentos_por_fileira` - (select count(0) from `passagem` where `passagem`.`voo_id` = `v`.`id` and `passagem`.`status` in ('confirmada','checkin')),`a`.`fileiras` * `a`.`assentos_por_fileira`) AS `assentos_livres` FROM ((`voo` `v` join `trajeto` `t` on(`t`.`id` = `v`.`trajeto_id`)) join `aeronave` `a` on(`a`.`id` = `v`.`aeronave_id`)) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_voos_disponibilidade`  AS SELECT `v`.`id` AS `id`, `v`.`numero_voo` AS `numero_voo`, `v`.`data_voo` AS `data_voo`, `v`.`status` AS `status`, `v`.`valor_base` AS `valor_base`, `t`.`origem` AS `origem`, `t`.`destino` AS `destino`, `t`.`h_partida` AS `h_partida`, `t`.`h_chegada` AS `h_chegada`, concat(`v`.`data_voo`,' ',`t`.`h_partida`) AS `partida_em`, timestamp(`v`.`data_voo`,`t`.`h_chegada`) + interval (`t`.`h_chegada` < `t`.`h_partida`) day AS `chegada_em`, `a`.`modelo` AS `modelo`, `a`.`identificacao` AS `identificacao`, `a`.`fileiras`* `a`.`assentos_por_fileira` AS `capacidade`, coalesce(`a`.`fileiras` * `a`.`assentos_por_fileira` - (select count(0) from `passagem` where `passagem`.`voo_id` = `v`.`id` and `passagem`.`status` in ('confirmada','checkin')),`a`.`fileiras` * `a`.`assentos_por_fileira`) AS `assentos_livres` FROM ((`voo` `v` join `trajeto` `t` on(`t`.`origem` = `v`.`origem` and `t`.`destino` = `v`.`destino` and `t`.`h_partida` = `v`.`h_partida`)) join `aeronave` `a` on(`a`.`id` = `v`.`aeronave_id`)) ;
 
 --
 -- Restrições para tabelas despejadas
@@ -1239,6 +1246,6 @@ ALTER TABLE `tripulante`
 ALTER TABLE `voo`
   ADD CONSTRAINT `fk_voo_admin` FOREIGN KEY (`admin_cpf`) REFERENCES `admin` (`cpf`),
   ADD CONSTRAINT `fk_voo_aeronave` FOREIGN KEY (`aeronave_id`) REFERENCES `aeronave` (`id`),
-  ADD CONSTRAINT `fk_voo_trajeto` FOREIGN KEY (`trajeto_id`) REFERENCES `trajeto` (`id`);
+  ADD CONSTRAINT `fk_voo_trajeto` FOREIGN KEY (`origem`,`destino`,`h_partida`) REFERENCES `trajeto` (`origem`,`destino`,`h_partida`);
 COMMIT;
 

@@ -46,7 +46,7 @@ try {
             TIMESTAMP(v.data_voo, t.h_chegada) + INTERVAL (t.h_chegada < t.h_partida) DAY AS chegada_em
          FROM passagem p
          JOIN voo v ON v.id = p.voo_id
-         JOIN trajeto t ON t.id = v.trajeto_id
+         JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
          JOIN aeronave a ON a.id = v.aeronave_id
          JOIN assento asn ON asn.id = p.assento_id
          WHERE p.cliente_cpf = ?

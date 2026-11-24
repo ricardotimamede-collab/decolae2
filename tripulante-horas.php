@@ -16,7 +16,7 @@ $comando = $conexao_pdo->prepare(
             ROUND(MOD(TIME_TO_SEC(t.h_chegada) - TIME_TO_SEC(t.h_partida) + 86400, 86400) / 3600, 2) AS horas_trabalhadas
      FROM escala e
      JOIN voo v ON v.id = e.voo_id
-     JOIN trajeto t ON t.id = v.trajeto_id
+     JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
      WHERE e.tripulante_cpf = ?
      ORDER BY v.data_voo DESC, t.h_partida DESC"
 );

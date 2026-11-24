@@ -32,7 +32,7 @@ $comando = $conexao_pdo->prepare(
             a.modelo, a.identificacao, e.funcao_tripulante
      FROM escala e
      JOIN voo v ON v.id = e.voo_id
-     JOIN trajeto t ON t.id = v.trajeto_id
+     JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
      JOIN aeronave a ON a.id = v.aeronave_id
      WHERE e.tripulante_cpf = ?
        AND TIMESTAMP(v.data_voo, t.h_partida) > NOW()
