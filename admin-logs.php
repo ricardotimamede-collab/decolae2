@@ -69,6 +69,7 @@ renderizar_cabecalho('Logs', $usuario_logado);
 ?>
 
 <div class="secao-voos">
+  <a class="botao-pequeno" href="admin.php" style="margin-bottom: 20px;">← Voltar</a>
   <div class="cartao-busca-voos">
     <h2 class="titulo-secao-busca">Logs do Sistema</h2>
 

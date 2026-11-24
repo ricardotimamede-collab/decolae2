@@ -956,7 +956,7 @@ CREATE TABLE `vw_voos_disponibilidade` (
 ,`h_partida` time
 ,`h_chegada` time
 ,`partida_em` varchar(21)
-,`chegada_em` varchar(21)
+,`chegada_em` datetime
 ,`modelo` varchar(80)
 ,`identificacao` varchar(20)
 ,`capacidade` int(8) unsigned
@@ -1132,7 +1132,7 @@ ALTER TABLE `voo`
 --
 DROP TABLE IF EXISTS `vw_voos_disponibilidade`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_voos_disponibilidade`  AS SELECT `v`.`id` AS `id`, `v`.`numero_voo` AS `numero_voo`, `v`.`data_voo` AS `data_voo`, `v`.`status` AS `status`, `v`.`valor_base` AS `valor_base`, `t`.`origem` AS `origem`, `t`.`destino` AS `destino`, `t`.`h_partida` AS `h_partida`, `t`.`h_chegada` AS `h_chegada`, concat(`v`.`data_voo`,' ',`t`.`h_partida`) AS `partida_em`, concat(`v`.`data_voo`,' ',`t`.`h_chegada`) AS `chegada_em`, `a`.`modelo` AS `modelo`, `a`.`identificacao` AS `identificacao`, `a`.`fileiras`* `a`.`assentos_por_fileira` AS `capacidade`, coalesce(`a`.`fileiras` * `a`.`assentos_por_fileira` - (select count(0) from `passagem` where `passagem`.`voo_id` = `v`.`id` and `passagem`.`status` in ('confirmada','checkin')),`a`.`fileiras` * `a`.`assentos_por_fileira`) AS `assentos_livres` FROM ((`voo` `v` join `trajeto` `t` on(`t`.`id` = `v`.`trajeto_id`)) join `aeronave` `a` on(`a`.`id` = `v`.`aeronave_id`)) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_voos_disponibilidade`  AS SELECT `v`.`id` AS `id`, `v`.`numero_voo` AS `numero_voo`, `v`.`data_voo` AS `data_voo`, `v`.`status` AS `status`, `v`.`valor_base` AS `valor_base`, `t`.`origem` AS `origem`, `t`.`destino` AS `destino`, `t`.`h_partida` AS `h_partida`, `t`.`h_chegada` AS `h_chegada`, concat(`v`.`data_voo`,' ',`t`.`h_partida`) AS `partida_em`, timestamp(`v`.`data_voo`,`t`.`h_chegada`) + interval (`t`.`h_chegada` < `t`.`h_partida`) day AS `chegada_em`, `a`.`modelo` AS `modelo`, `a`.`identificacao` AS `identificacao`, `a`.`fileiras`* `a`.`assentos_por_fileira` AS `capacidade`, coalesce(`a`.`fileiras` * `a`.`assentos_por_fileira` - (select count(0) from `passagem` where `passagem`.`voo_id` = `v`.`id` and `passagem`.`status` in ('confirmada','checkin')),`a`.`fileiras` * `a`.`assentos_por_fileira`) AS `assentos_livres` FROM ((`voo` `v` join `trajeto` `t` on(`t`.`id` = `v`.`trajeto_id`)) join `aeronave` `a` on(`a`.`id` = `v`.`aeronave_id`)) ;
 
 --
 -- Restrições para tabelas despejadas

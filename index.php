@@ -51,7 +51,7 @@ try {
         "SELECT v.id, v.numero_voo, v.data_voo, v.status, v.valor_base, v.aeronave_id,
                 t.origem, t.destino, t.h_partida, t.h_chegada,
                 CONCAT(v.data_voo, ' ', t.h_partida) AS partida_em,
-                CONCAT(v.data_voo, ' ', t.h_chegada) AS chegada_em,
+                TIMESTAMP(v.data_voo, t.h_chegada) + INTERVAL (t.h_chegada < t.h_partida) DAY AS chegada_em,
                 a.modelo, a.identificacao,
                 (a.fileiras * a.assentos_por_fileira) AS capacidade,
                 COALESCE((a.fileiras * a.assentos_por_fileira) - (

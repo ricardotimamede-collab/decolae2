@@ -20,7 +20,7 @@ try {
     $comando = $conexao_pdo->prepare(
         "SELECT v.id, v.numero_voo, 
                 TIMESTAMP(v.data_voo, t.h_partida) AS partida_em, 
-                TIMESTAMP(v.data_voo, t.h_chegada) AS chegada_em, 
+                TIMESTAMP(v.data_voo, t.h_chegada) + INTERVAL (t.h_chegada < t.h_partida) DAY AS chegada_em, 
                 v.valor_base, v.aeronave_id, a.modelo, a.identificacao, 
                 t.origem, t.destino 
          FROM voo v 

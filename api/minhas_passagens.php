@@ -43,7 +43,7 @@ try {
             t.h_partida,
             t.h_chegada,
             CONCAT(v.data_voo, ' ', t.h_partida) AS partida_em,
-            CONCAT(v.data_voo, ' ', t.h_chegada) AS chegada_em
+            TIMESTAMP(v.data_voo, t.h_chegada) + INTERVAL (t.h_chegada < t.h_partida) DAY AS chegada_em
          FROM passagem p
          JOIN voo v ON v.id = p.voo_id
          JOIN trajeto t ON t.id = v.trajeto_id
