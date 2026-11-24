@@ -453,17 +453,6 @@ $voos = $conexao_pdo->query(
      ORDER BY v.data_voo, t.h_partida"
 )->fetchAll();
 
-/**
- * Aqui ficam as ações mais recentes feitas no sistema.
- */
-$logs_recentes = $conexao_pdo->query(
-    'SELECT l.*, u.nome_completo
-     FROM log l
-     JOIN usuario u ON u.cpf = l.usuario_cpf
-     ORDER BY l.data_hora DESC
-     LIMIT 8'
-)->fetchAll();
-
 // A partir daqui a gente monta a tela do administrador.
 renderizar_cabecalho('Administração de voos', $usuario_logado);
 ?>
@@ -633,30 +622,6 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
       </table>
     <?php else: ?>
       <p class="texto-vazio">Nenhum voo cadastrado.</p>
-    <?php endif; ?>
-  </div>
-  
-  <!-- Aqui aparecem as ações recentes para consulta. -->
-  <div class="cartao-formulario">
-    <h2 class="titulo-formulario">Últimos Logs</h2>
-    <?php if(count($logs_recentes) > 0): ?>
-      <div class="grade-logs">
-        <?php foreach ($logs_recentes as $log): ?>
-          <div class="cartao-log">
-            <div class="cartao-log-cabecalho">
-              <strong><?= esc($log['acao']) ?></strong>
-              <span class="texto-vazio">
-                <?= esc(formatar_data_hora_br($log['data_hora'])) ?>
-              </span>
-            </div>
-            <p class="texto-secundario texto-sem-margem">
-              <?= esc($log['descricao']) ?>
-            </p>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    <?php else: ?>
-      <p class="texto-vazio">Nenhum log registrado.</p>
     <?php endif; ?>
   </div>
 </div>

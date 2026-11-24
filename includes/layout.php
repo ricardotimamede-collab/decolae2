@@ -106,7 +106,9 @@ function renderizar_cabecalho(string $titulo, ?array $usuario = null): void
             
             <!-- O administrador acessa a operação dos voos por aqui. -->
             <?php if ($papel_ativo === 'admin'): ?>
-                <a class="nav-link active" href="admin.php">Administração</a>
+                <?php $pagina_atual = basename($_SERVER['SCRIPT_NAME']); ?>
+                <a class="nav-link <?= $pagina_atual !== 'admin-logs.php' ? 'active' : '' ?>" href="admin.php">Voos</a>
+                <a class="nav-link <?= $pagina_atual === 'admin-logs.php' ? 'active' : '' ?>" href="admin-logs.php">Logs</a>
             <?php endif; ?>
             
             <!-- O tripulante encontra a própria escala neste link. -->
