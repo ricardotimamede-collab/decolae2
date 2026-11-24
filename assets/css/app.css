@@ -1076,7 +1076,8 @@ h3,
     font-weight: bold;
 }
 
-.campo-login-form:has(:required) .rotulo-login::after {
+.campo-login-form:has(:required) .rotulo-login::after,
+.campo-form:has(:required) > label::after {
     content: " *";
     color: #d32f2f;
 }
@@ -1869,4 +1870,61 @@ h3,
     .botao-resultado-voo {
         width: 100%;
     }
+}
+
+.botao-perigo {
+    color: #c62828;
+    cursor: pointer;
+}
+
+.painel-modal-exclusao {
+    max-width: 420px;
+    padding: 20px;
+}
+
+.titulo-modal-exclusao {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.texto-modal-exclusao {
+    margin: 0 0 20px;
+    font-size: 14px;
+}
+
+.acoes-modal-exclusao {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.botao-pequeno {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    background: #fff;
+    padding: 7px 14px;
+    color: #1976d2;
+    font-size: 12px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.botao-pequeno:hover,
+.botao-pequeno.aba-ativa {
+    border-color: #1976d2;
+    background: #eaf5ff;
+}
+
+.botao-pequeno.botao-perigo {
+    color: #c62828;
+}
+
+.botao-pequeno.botao-perigo:hover {
+    border-color: #c62828;
+    background: #fdecea;
 }

@@ -539,20 +539,19 @@ INSERT INTO `auditoria_tabela` (`id`, `tabela`, `registro_id`, `usuario_cpf`, `o
 --
 
 CREATE TABLE `cliente` (
-  `cpf` char(11) NOT NULL,
-  `telefone` varchar(15) DEFAULT NULL
+  `cpf` char(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Despejando dados para a tabela `cliente`
 --
 
-INSERT INTO `cliente` (`cpf`, `telefone`) VALUES
-('00000000001', NULL),
-('12345678903', NULL),
-('12345678904', '11999999999'),
-('10005767601', '32998312505'),
-('10005767604', '32998312508');
+INSERT INTO `cliente` (`cpf`) VALUES
+('00000000001'),
+('12345678903'),
+('12345678904'),
+('10005767601'),
+('10005767604');
 
 -- --------------------------------------------------------
 
@@ -849,32 +848,33 @@ CREATE TABLE `usuario` (
   `nome_completo` varchar(120) NOT NULL,
   `email` varchar(160) NOT NULL,
   `senha` varchar(255) NOT NULL,
-  `endereco` varchar(255) NOT NULL
+  `endereco` varchar(255) NOT NULL,
+  `telefone` varchar(15) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Despejando dados para a tabela `usuario`
 --
 
-INSERT INTO `usuario` (`cpf`, `nome_completo`, `email`, `senha`, `endereco`) VALUES
-('00000000001', 'Cliente Teste', 'cliente@teste.com', '$2y$12$8O/arIZ77quJX8X1U7CVoeQo4gKM/dmd4TeaB.jTRJc6d/eemt09W', 'Rua Teste, 123'),
-('00000000021', 'Leonardo Rocha', 'piloto.01@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Rua sebastião 13, bairro 22 de outubro'),
-('00000000022', 'Sebastião Pedro', 'piloto.demo02@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Rua sebastião 13, bairro 22 de outubro'),
-('00000000023', 'Neymar Junior', 'piloto.3@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000024', 'Vinicius Junior', 'piloto.4@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000025', 'Pedro Arrascaeta', 'piloto.5@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000026', 'Rossi Golger', 'comissario.demo01@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000027', 'Luiz Guilherme', 'comissario.demo02@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000028', 'Nivaldo Andrade', 'comissario.demo03@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000029', 'Luiz Inácio', 'comissario.demo04@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000030', 'Virginia Fonseca', 'comissario.demo05@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('00000000031', 'Paulo Fernando Neves', 'comissario.6@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração'),
-('10005767601', 'ricardo marcio mamede', 'ricardo@ricardo.com', '$2y$12$DelASUVgy42JSXLMSbidy.tt6XexVIaWAcShmf7MklTM9ZlZADRke', ''),
-('10005767604', 'paulo', 'paulo@paulao.com', '$2y$12$/PCsH01j/13jqZoKLBdrGe5VaMIC3PWxUK7M3bpXQM0dsEbvTwtMq', ''),
-('12345678901', 'Admin Silva', 'admin@decolae.com', '$2y$12$4qo2Zxs6rSKCeHsEsexuOem6tqePndmb6f03R96YZATXZprPL2FkS', 'Rua Principal 100'),
-('12345678902', 'Gerente Costa', 'gerente@decolae.com', '$2y$12$2nIObKXtWcLOLMt64XD8SeB7igA2GbRFYefvFilKMSEo5./mdTU1q', 'Avenida Central 200'),
-('12345678903', 'Tripulante Santos', 'tripulante@decolae.com', '$2y$12$yKIYmhiMJlHbPd8i5Q7rPuZPGaoJVFP1YjmvoHhqdfRWoOpzbiyue', 'Rua Lateral 300'),
-('12345678904', 'Cliente Oliveira', 'cliente@decolae.com', '$2y$12$d2AoEViwhM0L4K8BAZx1A.nz1rlwe1pnhiE0sTPt58zZ1UE5x1y2C', 'Rua Cliente 400');
+INSERT INTO `usuario` (`cpf`, `nome_completo`, `email`, `senha`, `endereco`, `telefone`) VALUES
+('00000000001', 'Cliente Teste', 'cliente@teste.com', '$2y$12$8O/arIZ77quJX8X1U7CVoeQo4gKM/dmd4TeaB.jTRJc6d/eemt09W', 'Rua Teste, 123', NULL),
+('00000000021', 'Leonardo Rocha', 'piloto.01@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Rua sebastião 13, bairro 22 de outubro', NULL),
+('00000000022', 'Sebastião Pedro', 'piloto.demo02@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Rua sebastião 13, bairro 22 de outubro', NULL),
+('00000000023', 'Neymar Junior', 'piloto.3@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000024', 'Vinicius Junior', 'piloto.4@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000025', 'Pedro Arrascaeta', 'piloto.5@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000026', 'Rossi Golger', 'comissario.demo01@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000027', 'Luiz Guilherme', 'comissario.demo02@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000028', 'Nivaldo Andrade', 'comissario.demo03@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000029', 'Luiz Inácio', 'comissario.demo04@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000030', 'Virginia Fonseca', 'comissario.demo05@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('00000000031', 'Paulo Fernando Neves', 'comissario.6@decolae.com', '$2y$12$bWrWN60tDowkts.X6afWeeOnPO5.qO1KhNsC3NreoWkVmCKQBMrTm', 'Endereço de demonstração', NULL),
+('10005767601', 'ricardo marcio mamede', 'ricardo@ricardo.com', '$2y$12$DelASUVgy42JSXLMSbidy.tt6XexVIaWAcShmf7MklTM9ZlZADRke', '', '32998312505'),
+('10005767604', 'paulo', 'paulo@paulao.com', '$2y$12$/PCsH01j/13jqZoKLBdrGe5VaMIC3PWxUK7M3bpXQM0dsEbvTwtMq', '', '32998312508'),
+('12345678901', 'Admin Silva', 'admin@decolae.com', '$2y$12$4qo2Zxs6rSKCeHsEsexuOem6tqePndmb6f03R96YZATXZprPL2FkS', 'Rua Principal 100', NULL),
+('12345678902', 'Gerente Costa', 'gerente@decolae.com', '$2y$12$2nIObKXtWcLOLMt64XD8SeB7igA2GbRFYefvFilKMSEo5./mdTU1q', 'Avenida Central 200', NULL),
+('12345678903', 'Tripulante Santos', 'tripulante@decolae.com', '$2y$12$yKIYmhiMJlHbPd8i5Q7rPuZPGaoJVFP1YjmvoHhqdfRWoOpzbiyue', 'Rua Lateral 300', NULL),
+('12345678904', 'Cliente Oliveira', 'cliente@decolae.com', '$2y$12$d2AoEViwhM0L4K8BAZx1A.nz1rlwe1pnhiE0sTPt58zZ1UE5x1y2C', 'Rua Cliente 400', '11999999999');
 
 -- --------------------------------------------------------
 
@@ -1003,8 +1003,7 @@ ALTER TABLE `auditoria_tabela`
 -- Índices de tabela `cliente`
 --
 ALTER TABLE `cliente`
-  ADD PRIMARY KEY (`cpf`),
-  ADD UNIQUE KEY `telefone` (`telefone`);
+  ADD PRIMARY KEY (`cpf`);
 
 --
 -- Índices de tabela `escala`
@@ -1059,7 +1058,8 @@ ALTER TABLE `tripulante`
 --
 ALTER TABLE `usuario`
   ADD PRIMARY KEY (`cpf`),
-  ADD UNIQUE KEY `email` (`email`);
+  ADD UNIQUE KEY `email` (`email`),
+  ADD UNIQUE KEY `telefone` (`telefone`);
 
 --
 -- Índices de tabela `voo`

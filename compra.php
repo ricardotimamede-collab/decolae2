@@ -15,12 +15,10 @@ if (!isset($_SESSION['cpf_usuario']) || $_SESSION['papel_usuario'] !== 'cliente'
 $conexao_pdo = db();
 $usuario = obter_usuario_atual($conexao_pdo);
 
-// O voo e o assento chegam pela URL e, na confirmação, pelo formulário.
 $tipo_entrada = eh_post() ? INPUT_POST : INPUT_GET;
 $id_voo = filter_input($tipo_entrada, 'voo', FILTER_VALIDATE_INT);
 $id_assento = filter_input($tipo_entrada, 'assento', FILTER_VALIDATE_INT);
 
-// Sem voo e assento válidos, a pessoa volta para a busca.
 if (!$id_voo || !$id_assento) {
     definir_aviso('Escolha um voo e um assento para continuar.', 'erro');
     header('Location: index.php#voos');
@@ -47,7 +45,6 @@ if (!$compra) {
     exit;
 }
 
-// Se alguém ocupou o assento enquanto a pessoa decidia, ela escolhe outro.
 $comando = $conexao_pdo->prepare(
     "SELECT 1 FROM passagem
      WHERE voo_id = ? AND assento_id = ? AND status IN ('confirmada', 'checkin')"
@@ -60,7 +57,6 @@ if ($comando->fetchColumn()) {
     exit;
 }
 
-// Na confirmação, a gente grava a compra e leva a pessoa para os bilhetes.
 if (eh_post()) {
     try {
         verificar_token_csrf($_POST['token_csrf'] ?? null);
@@ -79,7 +75,7 @@ if (eh_post()) {
 renderizar_cabecalho('Resumo da compra', $usuario);
 ?>
 
-<div class="mx-auto max-w-2xl px-5 py-10">
+<div class="secao-voos">
   <h1 class="titulo-secao-busca">Resumo da compra</h1>
   <p class="texto-secundario texto-pequeno" style="margin-bottom: 20px;">
     Confira os dados da viagem antes de confirmar.
@@ -121,8 +117,8 @@ renderizar_cabecalho('Resumo da compra', $usuario);
     <input type="hidden" name="voo" value="<?= esc($id_voo) ?>">
     <input type="hidden" name="assento" value="<?= esc($id_assento) ?>">
 
-    <a class="secondary-btn px-6 py-3" href="index.php#voos">Voltar</a>
-    <button class="botao-login flex-1" type="submit">Confirmar compra</button>
+    <a class="botao-pequeno" href="index.php#voos">Voltar</a>
+    <button class="botao flex-1" type="submit">Confirmar compra</button>
   </form>
 </div>
 

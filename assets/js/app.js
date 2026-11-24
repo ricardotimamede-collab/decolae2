@@ -75,7 +75,6 @@
             }, 4000);
         }
 
-        // Fica disponível para os scripts das páginas, como o de cancelar bilhete.
         window.mostrarToast = mostrarToast;
 
         /**
@@ -403,7 +402,6 @@
             });
         }
 
-        // O botão leva para o resumo da compra, onde a pessoa revisa e confirma.
         if (botaoConfirmar) {
             botaoConfirmar.addEventListener('click', () => {
                 if (botaoConfirmar.disabled || !assentoSelecionado || !vooAtivo) return;
@@ -424,6 +422,37 @@
                 if (e.target === modalAssentos) {
                     fecharModal();
                 }
+            });
+        }
+
+        const modalExclusao = document.querySelector('#delete-modal');
+        if (modalExclusao) {
+            const textoExclusao = modalExclusao.querySelector('#delete-modal-text');
+            let formularioExclusao = null;
+
+            function fecharModalExclusao() {
+                modalExclusao.hidden = true;
+                formularioExclusao = null;
+            }
+
+            document.querySelectorAll('form[data-confirmar]').forEach((formulario) => {
+                formulario.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    formularioExclusao = formulario;
+                    textoExclusao.textContent = formulario.dataset.confirmar;
+                    modalExclusao.hidden = false;
+                });
+            });
+
+            modalExclusao.querySelector('#delete-modal-confirm').addEventListener('click', () => {
+                if (formularioExclusao) formularioExclusao.submit();
+            });
+            modalExclusao.querySelector('#delete-modal-cancel').addEventListener('click', fecharModalExclusao);
+            modalExclusao.addEventListener('click', (e) => {
+                if (e.target === modalExclusao) fecharModalExclusao();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') fecharModalExclusao();
             });
         }
 

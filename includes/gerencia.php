@@ -21,3 +21,25 @@ function obter_campo_obrigatorio(string $nomeCampo): string
     
     return $valor;
 }
+
+function descrever_voos(int $total): string
+{
+    return $total === 1 ? '1 voo' : $total . ' voos';
+}
+
+function renderizar_modal_exclusao(): void
+{
+    ?>
+<div id="delete-modal" class="modal-assentos" hidden>
+  <div class="painel-modal-assentos painel-modal-exclusao">
+    <h3 class="titulo-modal-exclusao">Confirmar exclusão</h3>
+    <p id="delete-modal-text" class="texto-modal-exclusao"></p>
+
+    <div class="acoes-modal-exclusao">
+      <button type="button" id="delete-modal-cancel" class="botao-pequeno">Cancelar</button>
+      <button type="button" id="delete-modal-confirm" class="botao-pequeno botao-perigo">Excluir</button>
+    </div>
+  </div>
+</div>
+    <?php
+}

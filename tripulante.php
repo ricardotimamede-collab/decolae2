@@ -113,7 +113,6 @@ renderizar_cabecalho('Próximas escalas', $usuario_logado);
     </div>
   <?php endif; ?>
 
-  <!-- Estes cartões levam para as outras consultas do tripulante. -->
   <div class="grade-formularios" style="margin-top: 30px;">
     <a class="cartao-formulario" href="tripulante-historico.php">
       <h2 class="titulo-formulario">Histórico de Voos</h2>

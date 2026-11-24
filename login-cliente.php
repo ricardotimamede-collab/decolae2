@@ -16,8 +16,8 @@ $mensagem_erro = null;
 $mensagem_sucesso = null;
 $modo_atual = 'login'; // A tela começa no login e também permite criar uma conta.
 
-if (!eh_post() && ($_GET['modo'] ?? '') === 'cadastro') {
-    $modo_atual = 'cadastro';
+if (!eh_post() && in_array($_GET['modo'] ?? '', ['cadastro', 'ativar'], true)) {
+    $modo_atual = $_GET['modo'];
 }
 
 // Aqui a gente identifica se a pessoa está entrando ou criando uma conta.
@@ -76,15 +76,28 @@ if (eh_post()) {
             $cpf = preg_replace('/\D/', '', $_POST['cpf'] ?? '');
             $email = trim((string) ($_POST['email_cadastro'] ?? ''));
             $telefone = preg_replace('/\D/', '', $_POST['telefone'] ?? '');
+            $endereco = trim((string) ($_POST['endereco'] ?? ''));
             $senha = (string) ($_POST['senha_cadastro'] ?? '');
             $confirmacao_senha = (string) ($_POST['confirmacao_senha'] ?? '');
+            
+            if ($nome_completo === '') {
+                throw new InvalidArgumentException('Nome é obrigatório.');
+            }
             
             if ($cpf === '') {
                 throw new InvalidArgumentException('CPF é obrigatório.');
             }
             
+            if (strlen($cpf) !== 11) {
+                throw new InvalidArgumentException('O CPF deve ter 11 dígitos.');
+            }
+            
             if ($email === '') {
                 throw new InvalidArgumentException('Email é obrigatório.');
+            }
+            
+            if ($telefone === '') {
+                throw new InvalidArgumentException('Telefone é obrigatório.');
             }
             
             if ($senha === '') {
@@ -95,53 +108,31 @@ if (eh_post()) {
                 throw new InvalidArgumentException('As senhas não coincidem.');
             }
             
-            $comando = $conexao_pdo->prepare('SELECT email, senha FROM usuario WHERE cpf = ?');
+            $comando = $conexao_pdo->prepare('SELECT 1 FROM usuario WHERE cpf = ?');
             $comando->execute([$cpf]);
             $conta_existente = $comando->fetch();
             
-            if ($telefone !== '') {
-                $comando = $conexao_pdo->prepare('SELECT 1 FROM cliente WHERE telefone = ? AND cpf <> ?');
-                $comando->execute([$telefone, $cpf]);
-                if ($comando->fetchColumn()) {
-                    throw new InvalidArgumentException('Este telefone já está cadastrado.');
-                }
+            $comando = $conexao_pdo->prepare('SELECT 1 FROM usuario WHERE telefone = ? AND cpf <> ?');
+            $comando->execute([$telefone, $cpf]);
+            if ($comando->fetchColumn()) {
+                throw new InvalidArgumentException('Este telefone já está cadastrado.');
             }
             
             if ($conta_existente) {
-                // Quem já tem conta (por exemplo, como tripulante) só ganha o perfil de cliente.
-                if (verificar_perfil_login_existe($conexao_pdo, $cpf, 'cliente')) {
-                    throw new InvalidArgumentException('Este CPF já está cadastrado.');
-                }
-                
-                if (
-                    strcasecmp($conta_existente['email'], $email) !== 0
-                    || !password_verify($senha, $conta_existente['senha'])
-                ) {
-                    throw new InvalidArgumentException(
-                        'Este CPF já está cadastrado. Use o email e a senha da sua conta.'
-                    );
-                }
-                
-                $comando_cliente = $conexao_pdo->prepare(
-                    'INSERT INTO cliente (cpf, telefone) VALUES (?, ?)'
+                throw new InvalidArgumentException(
+                    verificar_perfil_login_existe($conexao_pdo, $cpf, 'cliente')
+                        ? 'Este CPF já está cadastrado.'
+                        : 'Este CPF já tem conta de funcionário. Use a opção Já tenho conta de funcionário.'
                 );
-                $comando_cliente->execute([$cpf, $telefone]);
-                
-                log_action(
-                    $conexao_pdo,
-                    'PERFIL_CLIENTE_ATIVADO',
-                    'Usuário existente ativou o perfil de cliente.',
-                    'usuario:' . $cpf,
-                    $cpf
-                );
-                
-                $mensagem_sucesso = 'Perfil de cliente ativado! Agora você também pode entrar como cliente.';
-                $modo_atual = 'login';
             } else {
                 $comando = $conexao_pdo->prepare('SELECT 1 FROM usuario WHERE email = ?');
                 $comando->execute([$email]);
                 if ($comando->fetchColumn()) {
                     throw new InvalidArgumentException('Este email já está em uso.');
+                }
+                
+                if ($endereco === '') {
+                    throw new InvalidArgumentException('Endereço é obrigatório.');
                 }
                 
                 // A transação mantém os dados da conta e do cliente sincronizados.
@@ -150,22 +141,21 @@ if (eh_post()) {
                 try {
                     // Primeiro a gente grava os dados gerais da conta.
                     $comando = $conexao_pdo->prepare(
-                        'INSERT INTO usuario (cpf, nome_completo, email, endereco, senha) 
-                         VALUES (?, ?, ?, ?, ?)'
+                        'INSERT INTO usuario (cpf, nome_completo, email, endereco, telefone, senha) 
+                         VALUES (?, ?, ?, ?, ?, ?)'
                     );
                     $comando->execute([
                         $cpf,
                         $nome_completo,
                         $email,
-                        '',
+                        $endereco,
+                        $telefone,
                         password_hash($senha, PASSWORD_BCRYPT)
                     ]);
                     
                     // Depois vinculamos a conta ao perfil de cliente.
-                    $comando_cliente = $conexao_pdo->prepare(
-                        'INSERT INTO cliente (cpf, telefone) VALUES (?, ?)'
-                    );
-                    $comando_cliente->execute([$cpf, $telefone]);
+                    $comando_cliente = $conexao_pdo->prepare('INSERT INTO cliente (cpf) VALUES (?)');
+                    $comando_cliente->execute([$cpf]);
                     
                     $conexao_pdo->commit();
                     
@@ -184,6 +174,53 @@ if (eh_post()) {
                     throw $excecao;
                 }
             }
+        }
+        elseif ($modo_atual === 'ativar') {
+            $cpf = preg_replace('/\D/', '', $_POST['cpf'] ?? '');
+            $email = trim((string) ($_POST['email_ativacao'] ?? ''));
+            $senha = (string) ($_POST['senha_ativacao'] ?? '');
+
+            if (strlen($cpf) !== 11) {
+                throw new InvalidArgumentException('O CPF deve ter 11 dígitos.');
+            }
+
+            if ($email === '') {
+                throw new InvalidArgumentException('Email é obrigatório.');
+            }
+
+            if ($senha === '') {
+                throw new InvalidArgumentException('Senha é obrigatória.');
+            }
+
+            $comando = $conexao_pdo->prepare('SELECT email, senha FROM usuario WHERE cpf = ?');
+            $comando->execute([$cpf]);
+            $conta = $comando->fetch();
+
+            if (!$conta) {
+                throw new InvalidArgumentException('Não existe conta com esse CPF. Use a opção Nova conta.');
+            }
+
+            if (verificar_perfil_login_existe($conexao_pdo, $cpf, 'cliente')) {
+                throw new InvalidArgumentException('Este CPF já tem conta de cliente. Faça login.');
+            }
+
+            if (strcasecmp($conta['email'], $email) !== 0 || !password_verify($senha, $conta['senha'])) {
+                throw new InvalidArgumentException('Email ou senha incorretos.');
+            }
+
+            $comando = $conexao_pdo->prepare('INSERT INTO cliente (cpf) VALUES (?)');
+            $comando->execute([$cpf]);
+
+            log_action(
+                $conexao_pdo,
+                'PERFIL_CLIENTE_ATIVADO',
+                'Usuário existente ativou o perfil de cliente.',
+                'usuario:' . $cpf,
+                $cpf
+            );
+
+            $mensagem_sucesso = 'Perfil de cliente ativado! Agora você também pode entrar como cliente.';
+            $modo_atual = 'login';
         }
     } catch (Throwable $excecao) {
         $mensagem_erro = $excecao->getMessage();
@@ -207,13 +244,13 @@ renderizar_cabecalho('Login - Cliente', null);
             
             <?php if ($mensagem_erro): ?>
                 <div class="aviso aviso-login-erro">
-                    ✗ <?= esc($mensagem_erro) ?>
+                    <?= esc($mensagem_erro) ?>
                 </div>
             <?php endif; ?>
             
             <?php if ($mensagem_sucesso): ?>
                 <div class="aviso aviso-login-sucesso">
-                    ✓ <?= esc($mensagem_sucesso) ?>
+                    <?= esc($mensagem_sucesso) ?>
                 </div>
             <?php endif; ?>
             
@@ -260,8 +297,73 @@ renderizar_cabecalho('Login - Cliente', null);
                     </a>
                 </div>
             
+            <?php elseif ($modo_atual === 'ativar'): ?>
+
+                <div class="flex gap-2" style="margin-bottom: 15px;">
+                    <a class="botao-pequeno " href="login-cliente.php?modo=cadastro">Nova conta</a>
+                    <a class="botao-pequeno aba-ativa" href="login-cliente.php?modo=ativar">Já tenho conta de funcionário</a>
+                </div>
+
+                <h2 class="titulo-login">Já tenho conta de funcionário</h2>
+                <p class="descricao-login">Use os dados da sua conta para também entrar como cliente</p>
+
+                <form method="post">
+                    <input type="hidden" name="token_csrf" value="<?= esc(obter_token_csrf()) ?>">
+                    <input type="hidden" name="modo" value="ativar">
+
+                    <div class="campo-login-form">
+                        <label class="rotulo-login">CPF</label>
+                        <input
+                            name="cpf"
+                            type="text"
+                            placeholder="000.000.000-00"
+                            maxlength="14"
+                            required
+                            class="entrada-login"
+                        >
+                    </div>
+
+                    <div class="campo-login-form">
+                        <label class="rotulo-login">Email</label>
+                        <input
+                            name="email_ativacao"
+                            type="email"
+                            placeholder="seu@email.com"
+                            required
+                            class="entrada-login"
+                        >
+                    </div>
+
+                    <div class="campo-login-form campo-login-form-final">
+                        <label class="rotulo-login">Senha</label>
+                        <input
+                            name="senha_ativacao"
+                            type="password"
+                            placeholder="••••••••"
+                            required
+                            class="entrada-login"
+                        >
+                    </div>
+
+                    <button class="botao-login botao-login-cadastro" type="submit">
+                        Ativar conta de cliente
+                    </button>
+                </form>
+
+                <div class="alternar-modo-login">
+                    <p class="alternar-modo-login-texto">Já tem conta de cliente?</p>
+                    <a class="link-botao-login" href="login-cliente.php">
+                        Fazer login
+                    </a>
+                </div>
+
             <?php else: ?>
                 
+                <div class="flex gap-2" style="margin-bottom: 15px;">
+                    <a class="botao-pequeno aba-ativa" href="login-cliente.php?modo=cadastro">Nova conta</a>
+                    <a class="botao-pequeno " href="login-cliente.php?modo=ativar">Já tenho conta de funcionário</a>
+                </div>
+
                 <h2 class="titulo-login">Criar nova conta</h2>
                 <p class="descricao-login">Preencha os dados abaixo</p>
                 
@@ -310,6 +412,17 @@ renderizar_cabecalho('Login - Cliente', null);
                             type="tel" 
                             placeholder="(11) 9999-9999" 
                             maxlength="15"
+                            required
+                            class="entrada-login"
+                        >
+                    </div>
+                    
+                    <div class="campo-login-form">
+                        <label class="rotulo-login">Endereço</label>
+                        <input 
+                            name="endereco" 
+                            type="text"
+                            maxlength="255"
                             required
                             class="entrada-login"
                         >

@@ -124,7 +124,7 @@ renderizar_cabecalho('Login Administrativo - ' . $perfis_administrativos[$perfil
                 
                 <?php if ($mensagem_erro): ?>
                     <div class="aviso aviso-login-erro">
-                        ✗ <?= esc($mensagem_erro) ?>
+                        <?= esc($mensagem_erro) ?>
                     </div>
                 <?php endif; ?>
                 

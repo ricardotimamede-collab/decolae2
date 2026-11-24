@@ -75,7 +75,7 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
 
 <div id="voos" class="secao-voos">
   <?php if ($aviso && $aviso['tipo'] === 'erro'): ?>
-    <div class="aviso aviso-erro">✗ <?= esc($aviso['texto']) ?></div>
+    <div class="aviso aviso-erro"><?= esc($aviso['texto']) ?></div>
   <?php endif; ?>
   
   <div class="cartao-busca-voos">

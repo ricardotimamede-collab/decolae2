@@ -129,9 +129,9 @@ function renderizar_cabecalho(string $titulo, ?array $usuario = null): void
                 </div>
                 
                 <!-- Este botão encerra a sessão. -->
-                <a class="secondary-btn px-4 py-2" href="logout.php">↗ Sair</a>
+                <a class="secondary-btn botao-perigo px-4 py-2" href="logout.php">↗ Sair</a>
             <?php elseif (!in_array(basename($_SERVER['SCRIPT_NAME']), ['login-cliente.php', 'login-administrativo.php'], true)): ?>
-                <!-- Sem sessão, a pessoa pode entrar por aqui, exceto nas telas de login. -->
+                <!-- Sem sessão, a pessoa pode entrar por aqui. -->
                 <a href="login-cliente.php" class="secondary-btn px-4 py-2">
                     Entrar
                 </a>

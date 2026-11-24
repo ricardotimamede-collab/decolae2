@@ -409,21 +409,14 @@ function is_post(): bool
 }
 
 /**
- * Aqui a gente registra a compra de um assento para o cliente.
  *
  * @param PDO $conexao Conexão com banco de dados
- * @param string $cpf_cliente CPF de quem está comprando
- * @param int $id_voo Voo escolhido
- * @param int $id_assento Assento escolhido
- * @return array Número do bilhete e código do assento
- * @throws RuntimeException Se o voo ou o assento não estiverem disponíveis
  */
 function reservar_passagem(PDO $conexao, string $cpf_cliente, int $id_voo, int $id_assento): array
 {
     $conexao->beginTransaction();
 
     try {
-        // O bloqueio evita que outra compra altere este voo durante a operação.
         $cmd = $conexao->prepare(
             "SELECT v.id, v.valor_base, a.id AS aeronave_id
              FROM voo v
@@ -448,7 +441,6 @@ function reservar_passagem(PDO $conexao, string $cpf_cliente, int $id_voo, int $
 
         if (!$assento) throw new Exception('Assento inválido.');
 
-        // Antes de comprar, a gente confirma que ninguém ocupou o assento.
         $cmd = $conexao->prepare(
             "SELECT id FROM passagem
              WHERE voo_id = ? AND assento_id = ? AND status IN ('confirmada', 'checkin')
@@ -487,24 +479,10 @@ function reservar_passagem(PDO $conexao, string $cpf_cliente, int $id_voo, int $
     }
 }
 
-/** Máximo de horas de voo seguidas, antes de exigir um descanso. */
 const LIMITE_HORAS_TRABALHO = 12;
 
-/** Descanso mínimo, em horas, que encerra um período de trabalho. */
 const DESCANSO_MINIMO_HORAS = 36;
 
-/**
- * Aqui a gente confere se um tripulante pode assumir um novo voo.
- *
- * Voos separados por menos de 36 horas formam um mesmo período de trabalho,
- * e esse período não pode passar de 12 horas de voo. Também não pode haver
- * sobreposição de horários.
- *
- * @param array $escalas_existentes Voos já escalados, com numero_voo, partida_em e chegada_em
- * @param string $partida Partida do novo voo
- * @param string $chegada Chegada do novo voo
- * @return string|null Motivo da recusa, ou null se a escala é permitida
- */
 function avaliar_escala_tripulante(array $escalas_existentes, string $partida, string $chegada): ?string
 {
     $inicio_novo = strtotime($partida);
@@ -523,7 +501,6 @@ function avaliar_escala_tripulante(array $escalas_existentes, string $partida, s
     $voos[] = ['inicio' => $inicio_novo, 'fim' => $fim_novo, 'novo' => true];
     usort($voos, static fn(array $a, array $b): int => $a['inicio'] <=> $b['inicio']);
 
-    // Cada período reúne os voos que não tiveram o descanso mínimo entre eles.
     $periodos = [];
     $periodo = [];
     $fim_anterior = null;
@@ -556,22 +533,11 @@ function avaliar_escala_tripulante(array $escalas_existentes, string $partida, s
     return null;
 }
 
-/**
- * Aqui a gente guarda um aviso na sessão para aparecer na próxima página.
- *
- * @param string $texto Mensagem para a pessoa
- * @param string $tipo "sucesso" ou "erro"
- */
 function definir_aviso(string $texto, string $tipo = 'sucesso'): void
 {
     $_SESSION['aviso'] = ['texto' => $texto, 'tipo' => $tipo];
 }
 
-/**
- * Aqui a gente lê o aviso guardado e o remove, para aparecer só uma vez.
- *
- * @return array|null Aviso com texto e tipo, ou null se não houver
- */
 function obter_aviso(): ?array
 {
     $aviso = $_SESSION['aviso'] ?? null;

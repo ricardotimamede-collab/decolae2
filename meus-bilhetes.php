@@ -21,7 +21,7 @@ renderizar_cabecalho('Meus Bilhetes', $usuario);
 
 <div class="secao-voos">
   <?php if ($aviso): ?>
-    <div class="aviso aviso-<?= esc($aviso['tipo']) ?>"><?= $aviso['tipo'] === 'sucesso' ? '✓' : '✗' ?> <?= esc($aviso['texto']) ?></div>
+    <div class="aviso aviso-<?= esc($aviso['tipo']) ?>"><?= esc($aviso['texto']) ?></div>
   <?php endif; ?>
 
 <div id="meus-bilhetes" class="secao-bilhetes">

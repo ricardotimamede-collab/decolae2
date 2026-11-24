@@ -149,17 +149,13 @@ function verificar_localizacao_aeronave(
 }
 
 /**
- * Aqui a gente confere se o tripulante pode assumir o voo.
  * 
- * Busca os voos já escalados e aplica a regra de 12 horas de trabalho
- * com descanso de 36 horas, além de impedir horários sobrepostos.
  * 
  * @param PDO $conexao Conexão com banco
  * @param string $cpf_tripulante CPF do tripulante
  * @param int $id_voo ID do voo (atual, para exclusão)
  * @param string $partida Timestamp de partida
  * @param string $chegada Timestamp de chegada
- * @return string|null Motivo da recusa ou null se a escala é permitida
  */
 function verificar_conflito_tripulante(
     PDO $conexao,
@@ -262,7 +258,6 @@ if (eh_post()) {
                     );
                 }
 
-                // A aeronave precisa estar na cidade de onde o voo vai sair.
                 $erro_localizacao = verificar_localizacao_aeronave(
                     $conexao_pdo,
                     $id_aeronave,
@@ -478,13 +473,13 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
   
   <?php if ($mensagem_sucesso): ?>
     <div class="aviso aviso-sucesso">
-      ✓ <?= esc($mensagem_sucesso) ?>
+      <?= esc($mensagem_sucesso) ?>
     </div>
   <?php endif; ?>
   
   <?php if ($mensagem_erro): ?>
     <div class="aviso aviso-erro">
-      ✗ <?= esc($mensagem_erro) ?>
+      <?= esc($mensagem_erro) ?>
     </div>
   <?php endif; ?>
   
@@ -500,7 +495,7 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
         
         <div class="campo-form">
           <label>Número do Voo</label>
-          <input name="numero_voo" placeholder="Ex: DC305" required>
+          <input name="numero_voo" required>
         </div>
         
         <div class="campo-form">
@@ -530,12 +525,12 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
         
         <div class="campo-form">
           <label>Data do Voo</label>
-          <input name="data_voo" type="date" value="<?= esc(date('Y-m-d', strtotime('+3 days'))) ?>" required>
+          <input name="data_voo" type="date" required>
         </div>
         
         <div class="campo-form">
           <label>Valor Base (R$)</label>
-          <input name="valor_base" type="number" min="0" step="0.01" value="649.90" required>
+          <input name="valor_base" type="number" min="0" step="0.01" required>
         </div>
         
         <button type="submit" class="botao botao-bloco">Criar Voo</button>
@@ -569,7 +564,6 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
             <option value="copiloto">Copiloto</option>
             <option value="comissario">Comissário de Bordo</option>
           </select>
-          <small>Pilotos também podem ser alocados como copilotos.</small>
         </div>
 
         <div class="campo-form">
