@@ -61,7 +61,13 @@ try {
          FROM voo v
          JOIN trajeto t ON t.id = v.trajeto_id
          JOIN aeronave a ON a.id = v.aeronave_id
-         WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE() 
+         WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE()
+           AND v.id IN (
+               SELECT voo_id FROM escala GROUP BY voo_id
+               HAVING SUM(funcao_tripulante = 'piloto') >= 1
+                  AND SUM(funcao_tripulante = 'copiloto') >= 1
+                  AND SUM(funcao_tripulante = 'comissario') >= 2
+           )
          ORDER BY partida_em LIMIT 12"
     );
     $voos = $comando->fetchAll();

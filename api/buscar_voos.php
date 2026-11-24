@@ -13,7 +13,13 @@ try {
     $destino = trim((string) ($_GET['destination'] ?? ''));
     $data_voo = normalizar_data(isset($_GET['date']) ? (string) $_GET['date'] : null);
     
-    $sql = "SELECT * FROM vw_voos_disponibilidade WHERE status <> 'cancelado'";
+    $sql = "SELECT * FROM vw_voos_disponibilidade WHERE status <> 'cancelado'
+            AND id IN (
+                SELECT voo_id FROM escala GROUP BY voo_id
+                HAVING SUM(funcao_tripulante = 'piloto') >= 1
+                   AND SUM(funcao_tripulante = 'copiloto') >= 1
+                   AND SUM(funcao_tripulante = 'comissario') >= 2
+            )";
     $parametros = [];
     
     if ($origem !== '') {
