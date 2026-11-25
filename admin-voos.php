@@ -897,13 +897,13 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
     <h2 class="titulo-formulario">Status Operacional dos Voos</h2>
     <?php if ($mensagem_sucesso && $aviso_na_lista): ?>
     <div class="aviso aviso-sucesso">
-      <?= esc($mensagem_sucesso && $aviso_na_lista) ?>
+      <?= esc($mensagem_sucesso) ?>
     </div>
     <?php endif; ?>
   
     <?php if ($mensagem_erro && $aviso_na_lista): ?>
     <div class="aviso aviso-erro">
-      <?= esc($mensagem_erro && $aviso_na_lista) ?>
+      <?= esc($mensagem_erro) ?>
     </div>
     <?php endif; ?>
     <p class="texto-ajuda">Requerido: 1 piloto · 1 copiloto · 2 comissários</p>
