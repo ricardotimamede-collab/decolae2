@@ -1,6 +1,5 @@
 <?php
 
-
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/functions.php';
@@ -8,7 +7,6 @@ require_once __DIR__ . '/includes/layout.php';
 
 $conexao_pdo = db();
 
-// Só o perfil de tripulante pode consultar esta página.
 $usuario_logado = exigir_papel($conexao_pdo, 'tripulante');
 
 $comando = $conexao_pdo->prepare(

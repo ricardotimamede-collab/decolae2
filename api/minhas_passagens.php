@@ -1,18 +1,11 @@
 <?php
 declare(strict_types=1);
 
-/**
- * Aqui a gente devolve os bilhetes da pessoa que está conectada.
- * 
- * A resposta inclui os dados do voo, da aeronave, do assento e do trajeto.
- */
-
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../includes/functions.php';
 
 try {
-    // Só clientes conectados podem consultar os próprios bilhetes.
     if (!isset($_SESSION['cpf_usuario']) || $_SESSION['papel_usuario'] !== 'cliente') {
         resposta_json(['ok' => false, 'message' => 'Não autorizado.'], 403);
     }
@@ -24,7 +17,6 @@ try {
         resposta_json(['ok' => false, 'message' => 'Usuário não encontrado.'], 404);
     }
     
-    // Aqui a gente reúne os detalhes necessários para mostrar cada bilhete.
     $comando = $conexao_pdo->prepare(
         "SELECT 
             p.id,

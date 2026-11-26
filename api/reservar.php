@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// Aqui a gente avisa que a resposta será JSON antes de enviar qualquer conteúdo.
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../includes/functions.php';

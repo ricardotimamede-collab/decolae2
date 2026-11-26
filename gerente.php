@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções e o layout desta página.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
 

@@ -1,18 +1,10 @@
 <?php
 
-/**
- * Aqui a gente concentra a entrada dos perfis que cuidam da operação.
- * 
- * Administradores, gerentes e tripulantes entram por esta tela.
- */
-
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções e o layout usados no login.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
 
-// Cada perfil leva a pessoa para sua própria área depois do login.
 $perfis_administrativos = [
     'admin' => [
         'label' => 'Administrador',
@@ -28,7 +20,6 @@ $perfis_administrativos = [
     ],
 ];
 
-// Essas variáveis guardam os avisos do formulário.
 $perfil_selecionado = strtolower((string) ($_GET['perfil'] ?? $_POST['perfil'] ?? 'admin'));
 
 if (!isset($perfis_administrativos[$perfil_selecionado])) {
@@ -37,7 +28,6 @@ if (!isset($perfis_administrativos[$perfil_selecionado])) {
 
 $mensagem_erro = null;
 
-// Aqui a gente valida os dados enviados para entrar.
 if (eh_post()) {
     try {
         $conexao_pdo = db();
@@ -93,7 +83,6 @@ renderizar_cabecalho('Login Administrativo - ' . $perfis_administrativos[$perfil
         
         <div class="login-admin-colunas">
             
-            <!-- Aqui a pessoa escolhe qual perfil quer acessar. -->
             <div>
                 <h1 class="login-admin-titulo">Área Administrativa</h1>
                 <p class="login-admin-descricao">Selecione seu perfil de acesso</p>
@@ -119,7 +108,6 @@ renderizar_cabecalho('Login Administrativo - ' . $perfis_administrativos[$perfil
                 </div>
             </div>
             
-            <!-- Depois de escolher o perfil, a pessoa informa os dados da conta. -->
             <div class="cartao-login">
                 
                 <?php if ($mensagem_erro): ?>

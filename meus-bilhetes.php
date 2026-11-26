@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções compartilhadas e o layout da página.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
+require_once __DIR__ . '/includes/gerencia.php';
 
-// Esta área é exclusiva para quem entrou como cliente.
 if (!isset($_SESSION['cpf_usuario']) || $_SESSION['papel_usuario'] !== 'cliente') {
     header('Location: login-cliente.php');
     exit;
@@ -35,12 +34,10 @@ renderizar_cabecalho('Meus Bilhetes', $usuario);
 </div>
 </div>
 
-<!-- Aqui a gente carrega e atualiza os bilhetes sem recarregar a página. -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     carregarBilhetes();
     
-    // Os botões de cancelamento recebem seus eventos dentro de carregarBilhetes().
 });
 
 async function carregarBilhetes() {
@@ -65,13 +62,11 @@ async function carregarBilhetes() {
             return;
         }
         
-        // Aqui a gente atualiza a lista de bilhetes na tela.
         let html = '';
         dados.passagens.forEach(passagem => {
             const dataCriacao = new Date(passagem.data_compra);
             const dataCriacaoFormatada = dataCriacao.toLocaleDateString('pt-BR') + ' ' + dataCriacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             
-            // Bilhetes cancelados não oferecem outra ação de cancelamento.
             const mostrarBotao = passagem.status !== 'cancelada';
             
             html += `
@@ -103,12 +98,20 @@ async function carregarBilhetes() {
         
         container.innerHTML = html;
         
-        // Agora a gente liga cada botão ao processo de cancelamento.
         const botoesCancelar = container.querySelectorAll('.btn-cancelar-bilhete');
         
-        botoesCancelar.forEach((botao, indice) => {
-            botao.addEventListener('click', async (e) => {
-                e.preventDefault();
+        const modal = document.querySelector('#delete-modal');
+        botoesCancelar.forEach((botao) => {
+            botao.addEventListener('click', () => {
+                modal.dispatchEvent(new CustomEvent('solicitar-confirmacao', {
+                    detail: {
+                        texto: 'Deseja cancelar este bilhete?',
+                        acao: cancelarBilhete
+                    }
+                }));
+            });
+
+            async function cancelarBilhete() {
                 
                 const idBilhete = parseInt(botao.dataset.bilheteId);
                 
@@ -152,7 +155,7 @@ async function carregarBilhetes() {
                     botao.disabled = false;
                     botao.innerHTML = 'Cancelar';
                 }
-            });
+            }
         });
         
     } catch (erro) {
@@ -164,4 +167,5 @@ async function carregarBilhetes() {
 }
 </script>
 
+<?php renderizar_modal_exclusao('Confirmar cancelamento', 'Cancelar bilhete', 'Voltar'); ?>
 <?php renderizar_rodape(); ?>

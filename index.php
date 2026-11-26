@@ -2,51 +2,25 @@
 
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções compartilhadas e o layout da página.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
 
-// Esta área é exclusiva para quem entrou como cliente.
-
-// Sem uma sessão de cliente, a gente volta para a tela de login.
 if (!isset($_SESSION['cpf_usuario']) || $_SESSION['papel_usuario'] !== 'cliente') {
     header('Location: login-cliente.php');
     exit;
 }
 
-// Aqui ficam os dados e avisos usados pela página.
 $conexao_pdo = null;
 $usuario = null;
 $voos = [];
-$codigos_aeroportos = [];
 $erro_banco = null;
 $aviso = obter_aviso();
 
 try {
-    // A gente usa esta conexão para consultar os voos.
     $conexao_pdo = db();
     
-    // Primeiro carregamos os dados da conta conectada.
     $usuario = obter_usuario_atual($conexao_pdo);
 
-    // Essas opções ajudam a pessoa a escolher uma rota e uma data disponíveis.
-    $codigos_aeroportos = $conexao_pdo->query(
-        "SELECT codigo
-         FROM (
-             SELECT t.origem AS codigo
-             FROM voo v
-             JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
-             WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE()
-             UNION
-             SELECT t.destino AS codigo
-             FROM voo v
-             JOIN trajeto t ON t.origem = v.origem AND t.destino = v.destino AND t.h_partida = v.h_partida
-             WHERE v.status <> 'cancelado' AND v.data_voo >= CURDATE()
-         ) AS aeroportos_disponiveis
-         ORDER BY codigo"
-    )->fetchAll(PDO::FETCH_COLUMN);
-
-    // A gente mostra até 12 voos que atendem aos filtros.
     $comando = $conexao_pdo->query(
         "SELECT v.id, v.numero_voo, v.data_voo, v.status, v.valor_base, v.aeronave_id,
                 t.origem, t.destino, t.h_partida, t.h_chegada,
@@ -72,7 +46,6 @@ try {
     );
     $voos = $comando->fetchAll();
 } catch (Throwable $e) {
-    // Se a consulta falhar, guardamos o aviso para mostrar na tela.
     $erro_banco = $e->getMessage();
 }
 
@@ -89,25 +62,19 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
     
     <form id="search-form" class="formulario-busca-voos">
       <div>
-        <label class="rotulo-busca-voos">Origem</label>
-        <input class="entrada-busca-voos" name="origin" list="codigos-aeroportos" placeholder="Escolha uma origem" maxlength="60" autocomplete="off">
+        <label class="rotulo-busca-voos" for="busca-origem">Origem</label>
+        <input type="search" class="entrada-busca-voos" id="busca-origem" name="origin" placeholder="Cidade" maxlength="60" autocomplete="off">
       </div>
       
       <div>
-        <label class="rotulo-busca-voos">Destino</label>
-        <input class="entrada-busca-voos" name="destination" list="codigos-aeroportos" placeholder="Escolha um destino" maxlength="60" autocomplete="off">
+        <label class="rotulo-busca-voos" for="busca-destino">Destino</label>
+        <input type="search" class="entrada-busca-voos" id="busca-destino" name="destination" placeholder="Cidade" maxlength="60" autocomplete="off">
       </div>
       
       <div>
         <label class="rotulo-busca-voos">Data do voo</label>
         <input class="entrada-busca-voos" type="date" name="date">
       </div>
-
-      <datalist id="codigos-aeroportos">
-        <?php foreach ($codigos_aeroportos as $codigo_aeroporto): ?>
-          <option value="<?= esc($codigo_aeroporto) ?>"></option>
-        <?php endforeach; ?>
-      </datalist>
 
       <div class="container-botao-busca">
         <button class="botao-busca-voos" type="submit">Buscar</button>
@@ -139,62 +106,72 @@ renderizar_cabecalho('Encontre seu próximo destino', $usuario);
 
 <?php
 
-/**
- * Aqui a gente monta o cartão com os dados de um voo.
- * 
- * @param array $voo Dados do voo da view vw_voos_disponibilidade
- * @return string HTML do card formatado
- */
 function card_voo_html(array $voo): string
 {
-    // A duração é calculada a partir dos horários de partida e chegada.
     $data_partida = new DateTime($voo['partida_em']);
     $data_chegada = new DateTime($voo['chegada_em']);
     $diferenca_tempo = $data_partida->diff($data_chegada);
     $duracao_formatada = $diferenca_tempo->h . 'h ' . str_pad((string) $diferenca_tempo->i, 2, '0', STR_PAD_LEFT) . 'm';
     
-    // Também mostramos quantos assentos ainda estão livres.
     $assentos_livres = (int) $voo['assentos_livres'];
     $capacidade_total = (int) $voo['capacidade'];
-    $poucas_assentos = $assentos_livres <= max(4, (int) ceil($capacidade_total * .2));
-    
     ob_start();
     ?>
-    <div class="flight-card-simples cartao-voo-simples" 
-         data-flight-card 
-         data-flight-id="<?= (int) $voo['id'] ?>" 
-         data-origin="<?= esc($voo['origem']) ?>" 
-         data-destination="<?= esc($voo['destino']) ?>" 
+    <div class="flight-card-simples cartao-resultado-voo"
+         data-flight-card
+         data-flight-id="<?= (int) $voo['id'] ?>"
+         data-origin="<?= esc($voo['origem']) ?>"
+         data-destination="<?= esc($voo['destino']) ?>"
          data-date="<?= esc($voo['data_voo']) ?>">
-      
-      <div class="conteudo-voo-simples">
-        <div class="linha-voo-simples">
-          <strong><?= esc($voo['numero_voo']) ?></strong> - <?= esc($voo['modelo']) ?> (<?= esc($voo['identificacao']) ?>) - <?= $voo['status'] === 'embarque' ? 'Embarque' : 'Programado' ?>
-        </div>
-        
-        <div class="linha-voo-simples">
-          <?= $data_partida->format('H:i') ?> <?= esc($voo['origem']) ?> → <?= $data_chegada->format('H:i') ?> <?= esc($voo['destino']) ?> (<?= $duracao_formatada ?>)
-        </div>
-        
-        <div class="linha-voo-simples">
-          Preço: <?= formatar_moeda_brl($voo['valor_base']) ?> | Assentos: <?= $assentos_livres ?>/<?= $capacidade_total ?>
-        </div>
-        
+      <div class="cabecalho-resultado-voo">
         <div>
-          <button class="select-flight-btn botao-escolher-assento" data-flight-id="<?= (int) $voo['id'] ?>">
-            Escolher assento
-          </button>
+          <p class="rotulo-resultado-voo">Voo <?= esc($voo['numero_voo']) ?></p>
+          <p class="modelo-resultado-voo"><?= esc($voo['modelo']) ?></p>
         </div>
+        <div class="status-resultado-voo">
+          <p class="rotulo-resultado-voo">Status</p>
+          <p class="valor-status-resultado-voo"><?= esc($voo['status']) ?></p>
+        </div>
+        <div class="assentos-resultado-voo">
+          <p class="rotulo-resultado-voo">Assentos</p>
+          <p class="valor-assentos-resultado-voo"><?= $assentos_livres ?>/<?= $capacidade_total ?></p>
+        </div>
+      </div>
+
+      <div class="horarios-resultado-voo">
+        <div>
+          <p class="rotulo-resultado-voo">Origem</p>
+          <p class="local-resultado-voo"><?= esc($voo['origem']) ?></p>
+          <p class="data-resultado-voo"><?= $data_partida->format('d/m/Y') ?></p>
+          <p class="horario-resultado-voo"><?= $data_partida->format('H:i') ?></p>
+        </div>
+        <div class="duracao-resultado-voo">
+          <p class="rotulo-resultado-voo">Duração</p>
+          <p class="data-resultado-voo"><?= esc($duracao_formatada) ?></p>
+          <p class="seta-resultado-voo">→</p>
+        </div>
+        <div>
+          <p class="rotulo-resultado-voo">Destino</p>
+          <p class="local-resultado-voo"><?= esc($voo['destino']) ?></p>
+          <p class="data-resultado-voo"><?= $data_chegada->format('d/m/Y') ?></p>
+          <p class="horario-resultado-voo"><?= $data_chegada->format('H:i') ?></p>
+        </div>
+      </div>
+
+      <div class="acoes-resultado-voo">
+        <div>
+          <p class="rotulo-resultado-voo">A partir de</p>
+          <p class="preco-resultado-voo"><?= formatar_moeda_brl($voo['valor_base']) ?></p>
+        </div>
+        <button class="select-flight-btn botao-resultado-voo" data-flight-id="<?= (int) $voo['id'] ?>">Escolher Assento →</button>
       </div>
     </div>
     <?php
     return (string) ob_get_clean();
 }
 
-// Aqui começa o modal usado para escolher um assento.
 ?>
 
-<!-- A pessoa escolhe o assento neste modal. -->
 <div id="seat-modal" class="modal-assentos" hidden>
   <div class="painel-modal-assentos">
     
@@ -234,9 +211,7 @@ function card_voo_html(array $voo): string
   </div>
 </div>
 
-<!-- O JavaScript usa este elemento para mostrar avisos rápidos. -->
 <div id="toast" class="aviso-flutuante" hidden></div>
-
 
 <?php
 renderizar_rodape();

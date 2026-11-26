@@ -1,11 +1,7 @@
-/**
- * Aqui a gente cuida da busca de voos, da escolha de assentos e das reservas.
- */
 
 (function() {
     console.log('App DECOLAE iniciado');
     
-    // A gente espera a página carregar antes de procurar os elementos.
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', inicializarApp);
     } else {
@@ -15,7 +11,6 @@
     function inicializarApp() {
         console.log('Inicializando aplicação...');
         
-        // Aqui ficam os elementos da página que vamos usar.
         const modalAssentos = document.querySelector('#seat-modal');
         const mapaAssentos = document.querySelector('#seat-map');
         const resumoReserva = document.querySelector('#booking-summary');
@@ -25,13 +20,9 @@
         console.log('Modal encontrado:', !!modalAssentos);
         console.log('Formulário encontrado:', !!formularioBusca);
         
-        // Aqui a gente guarda o voo e o assento escolhidos.
         let assentoSelecionado = null;
         let vooAtivo = null;
 
-        /**
-         * Aqui a gente escapa o texto antes de colocá-lo no HTML.
-         */
         function escaparHtml(valor) {
             const texto = String(valor || '');
             const mapa = {
@@ -44,24 +35,15 @@
             return texto.replace(/[&<>"']/g, char => mapa[char]);
         }
 
-        /**
-         * Aqui a gente mostra o valor no formato de moeda brasileira.
-         */
         function formatarMoeda(valor) {
             return `R$ ${parseFloat(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
         }
 
-        /**
-         * Aqui a gente transforma a data e hora em um horário fácil de ler.
-         */
         function formatarHora(datetime) {
             const data = new Date(datetime.replace(' ', 'T'));
             return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         }
 
-        /**
-         * Aqui a gente mostra um aviso rápido na tela.
-         */
         function mostrarToast(mensagem, tipo = 'sucesso') {
             const toast = document.querySelector('#toast');
             if (!toast) return;
@@ -77,9 +59,6 @@
 
         window.mostrarToast = mostrarToast;
 
-        /**
-         * Aqui a gente liga os botões de voo à abertura do mapa de assentos.
-         */
         function anexarEventosBotoes() {
             const botoes = document.querySelectorAll('.select-flight-btn');
             console.log('Botões encontrados:', botoes.length);
@@ -94,9 +73,6 @@
             });
         }
 
-        /**
-         * Aqui a gente abre o modal do voo escolhido.
-         */
         async function abrirModalAssentos(idVoo) {
             console.log('Abrindo modal para voo ID:', idVoo);
             
@@ -118,7 +94,6 @@
                 resumoReserva.innerHTML = '<p class="texto-resumo-vazio">Selecione um assento para continuar.</p>';
             }
             
-            // Agora a pessoa pode escolher um assento.
             modalAssentos.hidden = false;
             document.body.classList.add('modal-aberto');
             
@@ -155,9 +130,6 @@
             }
         }
 
-        /**
-         * Aqui a gente monta o mapa com os assentos recebidos da API.
-         */
         function renderizarMapaAssentos(assentos) {
             console.log('Renderizando mapa com', assentos.length, 'assentos');
             
@@ -180,7 +152,6 @@
                 html += `<div class="seat-row">`;
                 html += `<span class="row-label">${escaparHtml(numeroLinha)}</span>`;
                 
-                // As três primeiras posições ficam deste lado do corredor.
                 ['A', 'B', 'C'].forEach(letra => {
                     const assento = porsLetra[letra];
                     if (assento) {
@@ -194,7 +165,6 @@
                 
                 html += `<span class="aisle">·</span>`;
                 
-                // As outras três posições ficam do outro lado.
                 ['D', 'E', 'F'].forEach(letra => {
                     const assento = porsLetra[letra];
                     if (assento) {
@@ -211,7 +181,6 @@
             
             mapaAssentos.innerHTML = html;
             
-            // Cada assento livre recebe o evento de seleção.
             mapaAssentos.querySelectorAll('.seat:not(.occupied)').forEach(botaoAssento => {
                 botaoAssento.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -220,18 +189,13 @@
             });
         }
 
-        /**
-         * Aqui a gente atualiza a seleção para o assento clicado.
-         */
         function selecionarAssento(botaoAssento) {
             console.log('Assento selecionado:', botaoAssento.dataset.seatCode);
             
-            // Primeiro tiramos o destaque da escolha anterior.
             mapaAssentos.querySelectorAll('.seat.selected').forEach(item => {
                 item.classList.remove('selected');
             });
             
-            // Depois destacamos o novo assento.
             botaoAssento.classList.add('selected');
             
             assentoSelecionado = {
@@ -243,7 +207,6 @@
                 botaoConfirmar.disabled = false;
             }
             
-            // O resumo acompanha a escolha atual.
             if (resumoReserva && vooAtivo) {
                 resumoReserva.innerHTML = `
                     <div class="resumo-reserva-linha">
@@ -262,18 +225,12 @@
             }
         }
 
-        /**
-         * Aqui a gente fecha o mapa e limpa a seleção em andamento.
-         */
         function fecharModal() {
             if (!modalAssentos) return;
             modalAssentos.hidden = true;
             document.body.classList.remove('modal-aberto');
         }
 
-        // Aqui a gente conecta os eventos aos controles da página.
-
-        // Quando a pessoa busca, a gente atualiza a lista de voos.
         if (formularioBusca) {
             const campoData = formularioBusca.querySelector('input[type="date"]');
             if (campoData) {
@@ -304,7 +261,6 @@
                     
                     console.log('Voos encontrados:', dados.voos.length);
                     
-                    // Os resultados recebidos viram cartões na tela.
                     const flightList = document.querySelector('#flight-list');
                     const emptyState = document.querySelector('#empty-state');
                     
@@ -390,7 +346,6 @@
                     
                     mostrarToast(`${dados.voos.length} ${dados.voos.length === 1 ? 'voo encontrado' : 'voos encontrados'}.`);
                     
-                    // Os novos cartões também precisam dos eventos de seleção.
                     setTimeout(anexarEventosBotoes, 100);
                 } catch (erro) {
                     console.error('Erro ao buscar voos:', erro);
@@ -410,13 +365,11 @@
             });
         }
 
-        // O botão de fechar encerra o modal.
         const botaoFechar = document.querySelector('#close-modal');
         if (botaoFechar) {
             botaoFechar.addEventListener('click', fecharModal);
         }
 
-        // Clicar fora do conteúdo também fecha o modal.
         if (modalAssentos) {
             modalAssentos.addEventListener('click', (e) => {
                 if (e.target === modalAssentos) {
@@ -428,24 +381,34 @@
         const modalExclusao = document.querySelector('#delete-modal');
         if (modalExclusao) {
             const textoExclusao = modalExclusao.querySelector('#delete-modal-text');
-            let formularioExclusao = null;
+            let confirmarAcao = null;
 
             function fecharModalExclusao() {
                 modalExclusao.hidden = true;
-                formularioExclusao = null;
+                confirmarAcao = null;
             }
+
+            function abrirConfirmacao(texto, acao) {
+                textoExclusao.textContent = texto;
+                confirmarAcao = acao;
+                modalExclusao.hidden = false;
+            }
+
+            modalExclusao.addEventListener('solicitar-confirmacao', (e) => {
+                abrirConfirmacao(e.detail.texto, e.detail.acao);
+            });
 
             document.querySelectorAll('form[data-confirmar]').forEach((formulario) => {
                 formulario.addEventListener('submit', (e) => {
                     e.preventDefault();
-                    formularioExclusao = formulario;
-                    textoExclusao.textContent = formulario.dataset.confirmar;
-                    modalExclusao.hidden = false;
+                    abrirConfirmacao(formulario.dataset.confirmar, () => formulario.submit());
                 });
             });
 
             modalExclusao.querySelector('#delete-modal-confirm').addEventListener('click', () => {
-                if (formularioExclusao) formularioExclusao.submit();
+                const acao = confirmarAcao;
+                fecharModalExclusao();
+                if (acao) acao();
             });
             modalExclusao.querySelector('#delete-modal-cancel').addEventListener('click', fecharModalExclusao);
             modalExclusao.addEventListener('click', (e) => {
@@ -456,14 +419,12 @@
             });
         }
 
-        // A tecla Escape oferece outra forma de fechar o modal.
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 fecharModal();
             }
         });
 
-        // Por fim, a gente prepara os botões que já vieram na página.
         console.log('Anexando eventos aos botões iniciais');
         setTimeout(() => {
             anexarEventosBotoes();

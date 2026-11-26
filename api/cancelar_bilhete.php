@@ -6,7 +6,6 @@ require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Aqui a gente registra detalhes da solicitação para ajudar na investigação de erros.
 $log_file = __DIR__ . '/../storage/cancelar_bilhete_detalhado.log';
 $timestamp = date('Y-m-d H:i:s');
 
@@ -18,7 +17,6 @@ $log .= "Method: " . $_SERVER['REQUEST_METHOD'] . "\n";
 $log .= "Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'indefinido') . "\n";
 $log .= "Session ID: " . session_id() . "\n";
 
-// Primeiro a gente confirma que a pessoa conectada é cliente.
 $log .= "\nAutenticação:\n";
 $log .= "  cpf_usuario: " . ($_SESSION['cpf_usuario'] ?? 'NÃO DEFINIDO') . "\n";
 $log .= "  papel_usuario: " . ($_SESSION['papel_usuario'] ?? 'NÃO DEFINIDO') . "\n";
@@ -34,7 +32,6 @@ if (!isset($_SESSION['cpf_usuario']) || $_SESSION['papel_usuario'] !== 'cliente'
 
 $log .= "  RESULTADO: OK\n";
 
-// O cancelamento só aceita uma requisição POST.
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $log .= "\nMétodo inválido\n";
     file_put_contents($log_file, $log, FILE_APPEND);
@@ -44,7 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Aqui a gente lê os dados enviados pela interface.
 $raw_input = file_get_contents('php://input');
 $log .= "\nInput recebido:\n";
 $log .= "  Raw: " . substr($raw_input, 0, 100) . "...\n";
@@ -72,7 +68,6 @@ $log .= "  CPF: " . $cpf_usuario . "\n";
 try {
     $conexao_pdo = db();
     
-    // A gente só pode cancelar um bilhete que pertence a esta pessoa.
     $comando = $conexao_pdo->prepare(
         "SELECT p.id, p.voo_id, p.status, p.numero_bilhete 
          FROM passagem p
@@ -106,7 +101,6 @@ try {
         exit;
     }
     
-    // Com o bilhete validado, a gente registra o cancelamento.
     $log .= "\nExecutando UPDATE...\n";
     
     $conexao_pdo->beginTransaction();

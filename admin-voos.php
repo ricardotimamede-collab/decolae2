@@ -1,42 +1,21 @@
 <?php
 
-/**
- * Aqui a gente cuida da operação dos voos.
- * 
- * O administrador cadastra voos, monta as equipes e acompanha a operação.
- */
-
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções e o layout usados nesta tela.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/includes/gerencia.php';
 
-// Primeiro, a gente confirma que o acesso está no perfil certo.
-
-// A página usa esta conexão para consultar e atualizar os dados.
 $conexao_pdo = db();
 
-// Só quem está no perfil de administrador pode continuar.
 $usuario_logado = exigir_papel($conexao_pdo, 'admin');
 
-// Aqui ficam os avisos que aparecem depois das ações do formulário.
 $feedback_admin = $_SESSION['feedback_admin'] ?? [];
 unset($_SESSION['feedback_admin']);
 $mensagem_sucesso = $feedback_admin['sucesso'] ?? null;
 $mensagem_erro = $feedback_admin['erro'] ?? null;
 $aviso_na_lista = !empty($feedback_admin['na_lista']);
 
-// Essas funções ajudam a validar os dados enviados pelo formulário.
-
-/**
- * Aqui a gente pega um campo obrigatório enviado pelo formulário.
- * 
- * @param string $nomeCampo Nome do campo
- * @return string Valor do campo trimado
- * @throws InvalidArgumentException Se campo vazio
- */
 function obter_campo_obrigatorio_admin(string $nomeCampo): string
 {
     $valor = trim((string) ($_POST[$nomeCampo] ?? ''));
@@ -48,13 +27,6 @@ function obter_campo_obrigatorio_admin(string $nomeCampo): string
     return $valor;
 }
 
-/**
- * Aqui a gente junta a data do voo aos horários do trajeto.
- * 
- * @param PDO $conexao Conexão com banco
- * @param int $id_voo ID do voo
- * @return array|null Dados do voo ou null
- */
 function obter_horarios_voo(PDO $conexao, int $id_voo): ?array
 {
     $comando = $conexao->prepare(
@@ -70,15 +42,6 @@ function obter_horarios_voo(PDO $conexao, int $id_voo): ?array
     return $comando->fetch() ?: null;
 }
 
-/**
- * Aqui a gente confere se a aeronave está livre no horário solicitado.
- * 
- * @param PDO $conexao Conexão com banco
- * @param int $id_aeronave ID da aeronave
- * @param string $partida Timestamp de partida (ISO)
- * @param string $chegada Timestamp de chegada (ISO)
- * @return array|null Voo em conflito ou null
- */
 function verificar_conflito_aeronave(
     PDO $conexao,
     int $id_aeronave,
@@ -86,7 +49,6 @@ function verificar_conflito_aeronave(
     string $chegada,
     int $ignorar_voo = 0
 ): ?array {
-    // Se outro voo ocupar esse horário, a gente devolve o conflito.
     $comando = $conexao->prepare(
         "SELECT v.numero_voo
          FROM voo v
@@ -155,15 +117,6 @@ function verificar_localizacao_aeronave(
     return null;
 }
 
-/**
- * 
- * 
- * @param PDO $conexao Conexão com banco
- * @param string $cpf_tripulante CPF do tripulante
- * @param int $id_voo ID do voo (atual, para exclusão)
- * @param string $partida Timestamp de partida
- * @param string $chegada Timestamp de chegada
- */
 function verificar_conflito_tripulante(
     PDO $conexao,
     string $cpf_tripulante,
@@ -221,29 +174,18 @@ function funcao_serve_ao_papel(?string $cadastrada, string $papel): bool
     return $cadastrada === $papel || ($papel === 'copiloto' && $cadastrada === 'piloto');
 }
 
-// Aqui a gente valida e processa o que foi enviado pelos formulários.
-
 if (eh_post()) {
     try {
-        // Antes de continuar, a gente confere o token de segurança.
         verificar_token_csrf($_POST['token_csrf'] ?? null);
         
-        // Esse campo indica qual formulário foi enviado.
         $acao = $_POST['acao'] ?? '';
         
-        /**
-         * Aqui a gente prepara o cadastro de um voo.
-         * 
-         * O formulário informa o número, o trajeto, a aeronave, a data e o preço.
-         */
         if ($acao === 'voo') {
-            // Primeiro a gente lê os dados enviados.
             $numero_voo = strtoupper(obter_campo_obrigatorio_admin('numero_voo'));
             $codigo_trajeto = obter_campo_obrigatorio_admin('id_trajeto');
             $id_aeronave = (int) obter_campo_obrigatorio_admin('id_aeronave');
             $data_voo = normalizar_data(obter_campo_obrigatorio_admin('data_voo'));
             
-            // A data precisa estar no formato esperado.
             if (!$data_voo) {
                 throw new InvalidArgumentException('Data de voo inválida.');
             }
@@ -258,7 +200,6 @@ if (eh_post()) {
                 );
             }
             
-            // Os horários de partida e chegada vêm do trajeto escolhido.
             $comando_trajeto = $conexao_pdo->prepare(
                 'SELECT origem, destino, h_partida, h_chegada FROM trajeto
                  WHERE origem = ? AND destino = ? AND h_partida = ?'
@@ -266,12 +207,10 @@ if (eh_post()) {
             $comando_trajeto->execute(decodificar_trajeto($codigo_trajeto));
             $dados_trajeto = $comando_trajeto->fetch();
             
-            // Sem um trajeto válido, não dá para criar o voo.
             if (!$dados_trajeto) {
                 throw new InvalidArgumentException('Trajeto não encontrado.');
             }
             
-            // A gente junta a data do voo aos horários da rota.
             $timestamp_partida = $data_voo . ' ' . $dados_trajeto['h_partida'];
             $timestamp_chegada = $data_voo . ' ' . $dados_trajeto['h_chegada'];
             
@@ -285,11 +224,9 @@ if (eh_post()) {
                 );
             }
             
-            // A transação evita deixar um cadastro pela metade.
             $conexao_pdo->beginTransaction();
             
             try {
-                // Antes de salvar, a gente confere se a aeronave está livre.
                 $conflito_aeronave = verificar_conflito_aeronave(
                     $conexao_pdo,
                     $id_aeronave,
@@ -316,13 +253,11 @@ if (eh_post()) {
                     throw new InvalidArgumentException($erro_localizacao);
                 }
                 
-                // Aqui a gente prepara o novo registro do voo.
                 $comando = $conexao_pdo->prepare(
                     "INSERT INTO voo (numero_voo, data_voo, origem, destino, h_partida, aeronave_id, admin_cpf, valor_base, status)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'programado')"
                 );
                 
-                // Agora a gente grava o voo no banco.
                 $comando->execute([
                     $numero_voo,
                     $data_voo,
@@ -334,7 +269,6 @@ if (eh_post()) {
                     (float) ($_POST['valor_base'] ?? 649.90)
                 ]);
                 
-                // Também deixamos registrado quem criou o voo.
                 $id_voo_criado = $conexao_pdo->lastInsertId();
                 registrar_acao(
                     $conexao_pdo,
@@ -344,39 +278,28 @@ if (eh_post()) {
                     $usuario_logado['cpf']
                 );
                 
-                // Tudo deu certo, então a gente confirma as alterações.
                 $conexao_pdo->commit();
                 $mensagem_sucesso = 'Voo criado. Agora aloque a equipe mínima.';
             } catch (Throwable $excecao) {
-                // Se algo falhar, a gente desfaz o que foi feito na transação.
                 $conexao_pdo->rollBack();
                 throw $excecao;
             }
         }
-        /**
-         * Aqui a gente inclui um tripulante na equipe do voo.
-         * 
-         * O formulário informa o voo, a pessoa e a função na equipe.
-         */
         elseif ($acao === 'escala') {
-            // Primeiro a gente lê os dados da escala.
             $id_voo = (int) obter_campo_obrigatorio_admin('id_voo');
             $cpf_tripulante = obter_campo_obrigatorio_admin('cpf_tripulante');
             $funcao_tripulante = obter_campo_obrigatorio_admin('funcao_tripulante');
             
-            // A função precisa estar entre as opções aceitas.
             $funcoes_validas = ['piloto', 'copiloto', 'comissario'];
             if (!in_array($funcao_tripulante, $funcoes_validas, true)) {
                 throw new InvalidArgumentException('Função inválida.');
             }
             
-            // A gente confirma que o voo escolhido existe.
             $dados_voo = obter_horarios_voo($conexao_pdo, $id_voo);
             if (!$dados_voo) {
                 throw new InvalidArgumentException('Voo não encontrado.');
             }
             
-            // A função escolhida precisa ser compatível com o cadastro da pessoa.
             $comando = $conexao_pdo->prepare(
                 'SELECT funcao FROM tripulante WHERE cpf = ?'
             );
@@ -391,7 +314,6 @@ if (eh_post()) {
                 throw new InvalidArgumentException('O tripulante não está cadastrado para essa função.');
             }
             
-            // Antes de escalar, a gente confere a jornada e o descanso.
             $motivo_recusa = verificar_conflito_tripulante(
                 $conexao_pdo,
                 $cpf_tripulante,
@@ -404,14 +326,12 @@ if (eh_post()) {
                 throw new InvalidArgumentException($motivo_recusa);
             }
             
-            // Aqui a gente prepara a inclusão na equipe.
             $comando = $conexao_pdo->prepare(
                 'INSERT INTO escala (voo_id, tripulante_cpf, funcao_tripulante)
                  VALUES (?, ?, ?)'
             );
             $comando->execute([$id_voo, $cpf_tripulante, $funcao_tripulante]);
             
-            // Também guardamos no log quem fez a alocação.
             registrar_acao(
                 $conexao_pdo,
                 'ESCALA_CRIADA',
@@ -573,12 +493,10 @@ if (eh_post()) {
             $mensagem_sucesso = 'Voo excluído.';
         }
     } catch (Throwable $excecao) {
-        // Se a operação falhar, a gente desfaz qualquer transação aberta.
         if ($conexao_pdo->inTransaction()) {
             $conexao_pdo->rollBack();
         }
         
-        // O aviso vai aparecer para quem enviou o formulário.
         $mensagem_erro = $excecao->getMessage();
         if (
             $excecao instanceof PDOException
@@ -601,20 +519,12 @@ if (eh_post() && !(($_POST['acao'] ?? '') === 'voo_editar' && $mensagem_erro)) {
     exit;
 }
 
-// Agora a gente busca os dados que aparecem nos formulários e nas listas.
-
-/**
- * Aqui ficam os trajetos que podem ser usados em novos voos.
- */
 $trajetos = $conexao_pdo->query(
     'SELECT origem, destino, h_partida, h_chegada
      FROM trajeto
      ORDER BY origem, destino, h_partida'
 )->fetchAll();
 
-/**
- * Aqui a gente lista as aeronaves e a quantidade de assentos de cada uma.
- */
 $aeronaves = $conexao_pdo->query(
     'SELECT a.id, a.identificacao, a.modelo, COUNT(s.id) AS capacidade
      FROM aeronave a
@@ -623,9 +533,6 @@ $aeronaves = $conexao_pdo->query(
      ORDER BY a.identificacao'
 )->fetchAll();
 
-/**
- * Aqui a gente carrega a equipe que pode ser escalada.
- */
 $tripulantes = $conexao_pdo->query(
     'SELECT u.cpf, u.nome_completo, t.funcao
      FROM tripulante t
@@ -633,9 +540,6 @@ $tripulantes = $conexao_pdo->query(
      ORDER BY u.nome_completo'
 )->fetchAll();
 
-/**
- * A lista mostra cada voo e quantas pessoas já estão em cada função.
- */
 $voos = $conexao_pdo->query(
     "SELECT v.id, v.numero_voo, v.data_voo,
             TIMESTAMP(v.data_voo, t.h_partida) AS partida_em,
@@ -703,7 +607,6 @@ $pilotos_lista = array_filter($tripulantes, static fn(array $t): bool => $t['fun
 $copilotos_lista = array_filter($tripulantes, static fn(array $t): bool => in_array($t['funcao'], ['piloto', 'copiloto'], true));
 $comissarios_lista = array_filter($tripulantes, static fn(array $t): bool => $t['funcao'] === 'comissario');
 
-// A partir daqui a gente monta a tela do administrador.
 renderizar_cabecalho('Administração de voos', $usuario_logado);
 ?>
 
@@ -722,9 +625,7 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
       <?= esc($mensagem_erro) ?>
     </div>
   <?php endif; ?>
-  
-  
-  <!-- Aqui ficam os formulários de operação. -->
+
   <div class="grade-formularios grade-formularios-administracao">
     
 <?php if ($voo_em_edicao): ?>
@@ -793,7 +694,6 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
       </form>
     </div>
     <?php else: ?>
-    <!-- Neste formulário a gente cadastra um novo voo. -->
     <div class="cartao-formulario">
       <h2 class="titulo-formulario">Criar Voo</h2>
       <form method="post">
@@ -846,7 +746,6 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
     
     <?php endif; ?>
 
-    <!-- Neste formulário a gente monta a equipe de um voo. -->
     <div class="cartao-formulario">
       <h2 class="titulo-formulario">Alocar Tripulante</h2>
       <form method="post">
@@ -892,7 +791,6 @@ renderizar_cabecalho('Administração de voos', $usuario_logado);
     </div>
   </div>
   
-  <!-- Aqui a gente acompanha o status e a equipe de cada voo. -->
   <div class="cartao-formulario cartao-operacional" id="lista-voos" style="scroll-margin-top: 90px;">
     <h2 class="titulo-formulario">Status Operacional dos Voos</h2>
     <?php if ($mensagem_sucesso && $aviso_na_lista): ?>

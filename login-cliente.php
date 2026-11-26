@@ -1,26 +1,18 @@
 <?php
 
-/**
- * Aqui a gente permite que clientes entrem ou criem uma conta.
- * 
- */
-
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções e o layout usados no login.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
 
-// Essas variáveis guardam os avisos mostrados no formulário.
 $mensagem_erro = null;
 $mensagem_sucesso = null;
-$modo_atual = 'login'; // A tela começa no login e também permite criar uma conta.
+$modo_atual = 'login';
 
 if (!eh_post() && in_array($_GET['modo'] ?? '', ['cadastro', 'ativar'], true)) {
     $modo_atual = $_GET['modo'];
 }
 
-// Aqui a gente identifica se a pessoa está entrando ou criando uma conta.
 if (eh_post()) {
     $conexao_pdo = db();
     
@@ -29,7 +21,6 @@ if (eh_post()) {
     try {
         verificar_token_csrf($_POST['token_csrf'] ?? null);
         
-        // Neste caminho, a gente valida o acesso de uma conta existente.
         if ($modo_atual === 'login') {
             $email_inserido = trim((string) ($_POST['email'] ?? ''));
             $senha_inserida = (string) ($_POST['senha'] ?? '');
@@ -70,7 +61,6 @@ if (eh_post()) {
             exit;
         }
         
-        // Neste caminho, a gente cria uma nova conta de cliente.
         elseif ($modo_atual === 'cadastro') {
             $nome_completo = trim((string) ($_POST['nome_completo'] ?? ''));
             $cpf = preg_replace('/\D/', '', $_POST['cpf'] ?? '');
@@ -135,11 +125,9 @@ if (eh_post()) {
                     throw new InvalidArgumentException('Endereço é obrigatório.');
                 }
                 
-                // A transação mantém os dados da conta e do cliente sincronizados.
                 $conexao_pdo->beginTransaction();
                 
                 try {
-                    // Primeiro a gente grava os dados gerais da conta.
                     $comando = $conexao_pdo->prepare(
                         'INSERT INTO usuario (cpf, nome_completo, email, endereco, telefone, senha) 
                          VALUES (?, ?, ?, ?, ?, ?)'
@@ -153,7 +141,6 @@ if (eh_post()) {
                         password_hash($senha, PASSWORD_BCRYPT)
                     ]);
                     
-                    // Depois vinculamos a conta ao perfil de cliente.
                     $comando_cliente = $conexao_pdo->prepare('INSERT INTO cliente (cpf) VALUES (?)');
                     $comando_cliente->execute([$cpf]);
                     
@@ -233,13 +220,11 @@ renderizar_cabecalho('Login - Cliente', null);
 <section class="tela-login">
     <div class="login-cliente-container">
         
-        <!-- Aqui começa o conteúdo da tela de acesso. -->
         <div class="login-cliente-cabecalho">
             <h1 class="login-cliente-marca">DECOLAE</h1>
             <p class="login-cliente-subtitulo">Login de Cliente</p>
         </div>
         
-        <!-- A pessoa pode entrar ou criar a conta por este formulário. -->
         <div class="cartao-login">
             
             <?php if ($mensagem_erro): ?>

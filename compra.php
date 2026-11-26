@@ -2,11 +2,9 @@
 
 declare(strict_types=1);
 
-// Aqui a gente carrega as funções compartilhadas e o layout da página.
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/layout.php';
 
-// Esta área é exclusiva para quem entrou como cliente.
 if (!isset($_SESSION['cpf_usuario']) || $_SESSION['papel_usuario'] !== 'cliente') {
     header('Location: login-cliente.php');
     exit;
